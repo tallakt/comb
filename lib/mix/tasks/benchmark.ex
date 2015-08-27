@@ -28,7 +28,8 @@ defmodule Mix.Tasks.Benchmark do
     IO.puts "Testing combination"
     Benchwarmer.benchmark(
       [ 
-        &Permutations.Wless1.combinations/2
+        &Permutations.Wless1.combinations/2,
+        &Permutations.Wless1.combinations2/2
       ],
       [numbers, 5]
     )

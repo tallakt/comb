@@ -184,6 +184,15 @@ defmodule Permutations do
       end
     end
 
+    @doc """
+    Naive implementation
+
+    ## Examples
+
+        iex> combinations2([1, 2, 3], 2) |> Enum.sort
+        [[1, 2], [1, 3], [2, 3]]
+
+    """
     def combinations2(_, 0), do: [[]]
     def combinations2([], _), do: []
     def combinations2([h|t], k) do
