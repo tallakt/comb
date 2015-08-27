@@ -8,23 +8,23 @@ defmodule Permutations do
 
     ## Examples
 
-        iex> XStream.permutations 1..3 |> Enum.to_list
-        [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 2, 1], [3, 1, 2]]
+        iex> permutation([1, 2, 3]) |> Enum.sort
+        [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
         
     """
-    def permutations_tallakt(enumerable, count) when count >= 0 do
-      enumerable |> Enum.to_list |> do_permutations(count)
+    def permutation(enumerable, count) when count >= 0 do
+      enumerable |> Enum.to_list |> do_permutation(count)
     end
 
-    def permutations(enumerable) do
-      enumerable |> Enum.to_list |> do_permutations(-1)
+    def permutation(enumerable) do
+      enumerable |> Enum.to_list |> do_permutation(-1)
     end
 
-    defp do_permutations([], _), do: []
+    defp do_permutation([], _), do: []
 
-    defp do_permutations(_, 0), do: []
+    defp do_permutation(_, 0), do: []
 
-    defp do_permutations(list, count) do
+    defp do_permutation(list, count) do
       list
       |> elements_partitioned
       |> Stream.flat_map(fn {element, the_rest} ->
@@ -34,7 +34,7 @@ defmodule Permutations do
         {1, _} ->
           [[element]]
         _ ->
-          the_rest |> do_permutations(count - 1) |> Stream.map(fn p -> [element | p] end)
+          the_rest |> do_permutation(count - 1) |> Stream.map(fn p -> [element | p] end)
         end
       end)
     end
@@ -54,22 +54,22 @@ defmodule Permutations do
 
     ## Examples
 
-        iex> permutations = XEnum.permutations 1..3
-        [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 2, 1], [3, 1, 2]]
+        iex> permutation([1, 2, 3]) |> Enum.sort
+        [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
 
     """
-    def permutations(enumerable, count) when count >= 0 do
-      enumerable |> Enum.to_list |> do_permutations(count)
+    def permutation(enumerable, count) when count >= 0 do
+      enumerable |> Enum.to_list |> do_permutation(count)
     end
 
-    def permutations(enumerable) do
-      enumerable |> Enum.to_list |> do_permutations(-1)
+    def permutation(enumerable) do
+      enumerable |> Enum.to_list |> do_permutation(-1)
     end
 
-    defp do_permutations([], _), do: []
-    defp do_permutations(_, 0), do: []
+    defp do_permutation([], _), do: []
+    defp do_permutation(_, 0), do: []
 
-    defp do_permutations(list, count) do
+    defp do_permutation(list, count) do
       list
       |> elements_partitioned
       |> Enum.flat_map(fn {element, the_rest} ->
@@ -80,7 +80,7 @@ defmodule Permutations do
           [[element]]
         _ ->
           the_rest 
-          |> do_permutations(count - 1) 
+          |> do_permutation(count - 1) 
           |> Enum.map(fn p -> [element | p] end)
         end
       end)
@@ -96,18 +96,34 @@ defmodule Permutations do
   end
 
   defmodule Naive do
-    def permute([]), do: [[]]
+    @doc """
 
-    def permute(list) when is_list(list) do
-      for h <- list, t <- permute(list -- [h]), do: [h | t]
+    ## Examples
+
+        iex> permutation([1, 2, 3]) |> Enum.sort
+        [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+
+    """
+    def permutation([]), do: [[]]
+
+    def permutation(list) when is_list(list) do
+      for h <- list, t <- permutation(list -- [h]), do: [h | t]
     end
 
-    def permute(enum), do: permute(Enum.to_list(enum))
+    def permutation(enum), do: permutation(Enum.to_list(enum))
   end
 
   # slack @martinsvalin
   defmodule LazyPermutations  do
-    def permutations(list) do
+    @doc """
+
+    ## Examples
+
+        iex> permutation([1, 2, 3]) |> Enum.sort
+        [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+
+    """
+    def permutation(list) do
       list
       |> Enum.sort
       |> Stream.unfold fn
@@ -146,6 +162,14 @@ defmodule Permutations do
   end
 
   defmodule Wless1 do
+    @doc """
+
+    ## Examples
+
+        iex> combinations([1, 2, 3], 2) |> Enum.sort
+        [[1, 2], [1, 3], [2, 3]]
+
+    """
     def combinations(collection, k) do
       List.last(do_combinations(collection, k))
     end

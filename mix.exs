@@ -27,6 +27,8 @@ defmodule Permutations.Mixfile do
   #
   # Type `mix help deps` for more examples and options
   defp deps do
-    []
+    [
+      {:benchwarmer, "~> 0.0.2", only: :dev }
+    ]
   end
 end
