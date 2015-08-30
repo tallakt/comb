@@ -21,9 +21,15 @@ defmodule PermutationsTest do
     assert Permutations.SJT.permutation([]) |> Enum.sort == [[]]
   end
 
+  test "@martin's algorithm benchmarked with naive" do
+    enum = 0..3 |> Enum.to_list
+    assert Permutations.LazyPermutations.permutation(enum) |> Enum.sort == 
+      Permutations.Naive.permutation(enum) |> Enum.sort
+  end
+
   test "sjt algorithm benchmarked with naive" do
-    enum = 1..4 |> Enum.to_list
-    assert Permutations.SJT.permutation(enum) |> Enum.sort == 
+    enum = 0..3 |> Enum.to_list
+    assert Permutations.SJT.permutation(enum) |> Enum.take(4*3*2+1) |> Enum.sort == 
       Permutations.Naive.permutation(enum) |> Enum.sort
   end
 end

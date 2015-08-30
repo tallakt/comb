@@ -166,7 +166,10 @@ defmodule Permutations do
     defp initial_direction_for(_), do: :-
 
     defp advance(state) do
-      max = {{_, max_number, _}, _} = state |> Enum.with_index |> Enum.max_by(&max_value_for/1)
+      max = {{_, max_number, _}, _} = 
+        state 
+        |> Enum.with_index 
+        |> Enum.max_by(&max_value_for/1)
       last = Enum.count(state) - 1
       penultimate = last - 1
       {new_state, new_pos} = 
@@ -175,53 +178,27 @@ defmodule Permutations do
             {nil, -1}
 
           {{:-, n, el}, 1} -> # left end, move, and reset direction
-            s = 
-              state
-              |> List.delete_at(1)
-              |> List.insert_at(0, {:z, n, el})
-            {s, 0}
+            {swap_and_replace_left(state, 1, {:z, n, el}), 0}
 
           {{:+, n, el}, ^penultimate} -> # left end, move, and reset direction
-            s = 
-              state
-              |> :lists.reverse
-              |> List.delete_at(1)
-              |> List.insert_at(0, {:z, n, el})
-              |> :lists.reverse
-            {s, last}
+            {swap_and_replace_right(state, penultimate, {:z, n, el}), last}
 
           {state_el = {:-, n, el}, pos} ->
             case Enum.fetch!(state, pos - 2) do
               {_, other_n, _} when other_n > n ->
-                s = 
-                  state
-                  |> List.delete_at(pos)
-                  |> List.insert_at(pos - 1, {:z, n, el})
-                {s, pos - 1}
+                {swap_and_replace_left(state, pos, {:z, n, el}), pos - 1}
 
               _ ->
-                s = 
-                  state
-                  |> List.delete_at(pos)
-                  |> List.insert_at(pos - 1, state_el)
-                {s, pos - 1}
+                {swap_and_replace_left(state, pos, state_el), pos - 1}
               end
 
           {state_el = {:+, n, el}, pos} ->
             case Enum.fetch!(state, pos + 2) do
               {_, other_n, _} when other_n > n ->
-                s = 
-                  state
-                  |> List.delete_at(pos)
-                  |> List.insert_at(pos + 1, {:z, n, el})
-                {s, pos + 1}
+                {swap_and_replace_right(state, pos, {:z, n, el}), pos + 1}
 
               _ ->
-                s = 
-                  state
-                  |> List.delete_at(pos)
-                  |> List.insert_at(pos + 1, state_el)
-                {s, pos + 1}
+                {swap_and_replace_right(state, pos, state_el), pos + 1}
             end
         end
       update_signs_for_larger(new_state, new_pos, max_number)
@@ -248,6 +225,34 @@ defmodule Permutations do
       result |> :lists.reverse
     end
 
+
+    defp swap_and_replace_left(list, pos, a) do
+      do_swap_and_replace_left list, pos, a, []
+    end
+
+    defp do_swap_and_replace_left([h|t], pos, a, acc) when pos > 0 do
+      do_swap_and_replace_left t, pos - 1, a, [h|acc]
+    end
+
+    defp do_swap_and_replace_left([_|t], _, a, [acc_h|acc_t]) do
+      put_reverse_in_front(acc_t, [a, acc_h | t])
+    end
+
+    defp swap_and_replace_right(list, pos, a) do
+      do_swap_and_replace_right list, pos, a, []
+    end
+
+    defp do_swap_and_replace_right([h|t], pos, a, acc) when pos > 0 do
+      do_swap_and_replace_right t, pos - 1, a, [h|acc]
+    end
+
+    defp do_swap_and_replace_right([_, b | t], _, a, acc) do
+      put_reverse_in_front(acc, [b, a | t])
+    end
+
+    defp put_reverse_in_front([], list), do: list
+    defp put_reverse_in_front([h|t], list), do: put_reverse_in_front(t, [h|list])
+
     defp do_permutation(nil), do: nil
 
     defp do_permutation(state) do
@@ -259,6 +264,7 @@ defmodule Permutations do
     defp max_value_for({{_, i, _}, _}), do: i
 
   end
+
   defmodule Naive do
     @doc """
 
