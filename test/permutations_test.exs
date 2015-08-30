@@ -5,4 +5,5 @@ defmodule PermutationsTest do
   doctest Permutations.LazyPermutations, import: true
   doctest Permutations.TallakEnum, import: true
   doctest Permutations.TallakStream, import: true
+  doctest Permutations.TallakMaps, import: true
 end

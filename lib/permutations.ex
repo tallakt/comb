@@ -1,4 +1,53 @@
 defmodule Permutations do
+  defmodule TallakMaps do
+    @doc """
+    Returns a stream of all permutations of the given collection.
+
+    The count parameter will limit the number of elements, all are returned
+    by default
+
+    ## Examples
+
+        iex> permutation([1, 2, 3]) |> Enum.sort
+        [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+        
+    """
+    def permutation(enum) do
+      element_map = for {e,i} <- Enum.with_index(enum), into: %{}, do: {i, e}
+      last = Enum.count(element_map) - 1
+      initial_order = for i <- 0..last, into: %{}, do: {i, i}
+      stream_permutations(last, initial_order)
+      |> Stream.map(fn order ->
+          Enum.map(0..last,
+            &(Map.fetch!(element_map, Map.fetch!(order, &1)))
+          )
+        end)
+    end
+
+    defp stream_permutations(0, initial_order) do
+      [initial_order]
+    end
+
+    defp stream_permutations(last, initial_order) do
+      last_in_order = Map.fetch! initial_order, last
+
+      last..0
+      |> Stream.flat_map(fn i ->
+          case i do
+            ^last ->
+              stream_permutations(last - 1, initial_order)
+            _ ->
+              order =
+                initial_order # swap last and i
+                |> Map.put(last, Map.fetch!(initial_order, i))
+                |> Map.put(i, last_in_order)
+              stream_permutations(last - 1, order)
+          end
+        end)
+    end
+  end
+
+
   defmodule TallakStream do
     @doc """
     Returns a stream of all permutations of the given collection.
