@@ -22,7 +22,7 @@ defmodule PermutationsTest do
   end
 
   test "@martin's algorithm benchmarked with naive" do
-    enum = 0..3 |> Enum.to_list
+    enum = 10..14 |> Enum.to_list
     assert Permutations.LazyPermutations.permutation(enum) |> Enum.sort == 
       Permutations.Naive.permutation(enum) |> Enum.sort
   end

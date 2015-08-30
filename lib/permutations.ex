@@ -295,11 +295,16 @@ defmodule Permutations do
     """
     def permutation(list) do
       list
-      |> Enum.sort
+      |> Enum.with_index
+      |> Enum.map(fn {a, b} -> {b, a} end)
       |> Stream.unfold fn
         [] -> nil
-        p -> {p, next_permutation(p)}
+        p -> {result_for(p), next_permutation(p)}
       end
+    end
+
+    defp result_for(permutation) do
+      Enum.map(permutation, &(elem(&1, 1)))
     end
 
     defp next_permutation(permutation) do
