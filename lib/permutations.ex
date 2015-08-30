@@ -166,54 +166,87 @@ defmodule Permutations do
     defp initial_direction_for(_), do: :-
 
     defp advance(state) do
-      max = state |> Enum.with_index |> Enum.max_by(&max_value_for/1)
-      penultimate = Enum.count(state) - 2
-      case max do
-        {{:z, _, _}, _} ->
-          nil
+      max = {{_, max_number, _}, _} = state |> Enum.with_index |> Enum.max_by(&max_value_for/1)
+      last = Enum.count(state) - 1
+      penultimate = last - 1
+      {new_state, new_pos} = 
+        case max do
+          {{:z, _, _}, _} ->
+            {nil, -1}
 
-        {{:-, n, el}, 1} -> # left end, move, and reset direction
-          state
-          |> List.delete_at(1)
-          |> List.insert_at(0, {:z, n, el})
-
-        {{:+, n, el}, ^penultimate} -> # left end, move, and reset direction
-          state
-          |> :lists.reverse
-          |> List.delete_at(1)
-          |> List.insert_at(0, {:z, n, el})
-          |> :lists.reverse
-
-        {state_el = {:-, n, el}, pos} ->
-          case Enum.fetch!(state, pos - 2) do
-            {_, other_n, _} when other_n > n ->
+          {{:-, n, el}, 1} -> # left end, move, and reset direction
+            s = 
               state
-              |> List.delete_at(pos)
-              |> List.insert_at(pos - 1, {:z, n, el})
-              |> List.update_at(pos - 2, fn {_, a, b} -> {:+, a, b} end)
+              |> List.delete_at(1)
+              |> List.insert_at(0, {:z, n, el})
+            {s, 0}
 
-            _ ->
+          {{:+, n, el}, ^penultimate} -> # left end, move, and reset direction
+            s = 
               state
-              |> List.delete_at(pos)
-              |> List.insert_at(pos - 1, state_el)
-          end
+              |> :lists.reverse
+              |> List.delete_at(1)
+              |> List.insert_at(0, {:z, n, el})
+              |> :lists.reverse
+            {s, last}
 
-        {state_el = {:+, n, el}, pos} ->
-          case Enum.fetch!(state, pos + 2) do
-            {_, other_n, _} when other_n > n ->
-              state
-              |> List.delete_at(pos)
-              |> List.insert_at(pos + 1, {:z, n, el})
-              |> List.update_at(pos + 2, fn {_, a, b} -> {:-, a, b} end)
+          {state_el = {:-, n, el}, pos} ->
+            case Enum.fetch!(state, pos - 2) do
+              {_, other_n, _} when other_n > n ->
+                s = 
+                  state
+                  |> List.delete_at(pos)
+                  |> List.insert_at(pos - 1, {:z, n, el})
+                {s, pos - 1}
 
-            _ ->
-              state
-              |> List.delete_at(pos)
-              |> List.insert_at(pos + 1, state_el)
-          end
-      end
+              _ ->
+                s = 
+                  state
+                  |> List.delete_at(pos)
+                  |> List.insert_at(pos - 1, state_el)
+                {s, pos - 1}
+              end
+
+          {state_el = {:+, n, el}, pos} ->
+            case Enum.fetch!(state, pos + 2) do
+              {_, other_n, _} when other_n > n ->
+                s = 
+                  state
+                  |> List.delete_at(pos)
+                  |> List.insert_at(pos + 1, {:z, n, el})
+                {s, pos + 1}
+
+              _ ->
+                s = 
+                  state
+                  |> List.delete_at(pos)
+                  |> List.insert_at(pos + 1, state_el)
+                {s, pos + 1}
+            end
+        end
+      update_signs_for_larger(new_state, new_pos, max_number)
     end
 
+    defp update_signs_for_larger(nil, _, _), do: nil
+
+    defp update_signs_for_larger(new_state, new_pos, max_number) do
+      {result, _} =
+        new_state
+        |> Enum.reduce({[], 0}, fn
+            {_, n, el}, {res, i} when n > max_number and i < new_pos ->
+              res = [{:+, n, el} | res]
+              {res, i + 1}
+
+            {_, n, el}, {res, i} when n > max_number and i > new_pos ->
+              res = [{:-, n, el} | res]
+              {res, i + 1}
+
+            state_el, {res, i} ->
+              res = [state_el | res]
+              {res, i + 1}
+          end)
+      result |> :lists.reverse
+    end
 
     defp do_permutation(nil), do: nil
 
