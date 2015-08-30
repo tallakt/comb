@@ -3,9 +3,6 @@ defmodule PermutationsTest do
   doctest Permutations.Naive, import: true
   doctest Permutations.Wless1, import: true
   doctest Permutations.LazyPermutations, import: true
-  doctest Permutations.TallakEnum, import: true
-  doctest Permutations.TallakStream, import: true
-  doctest Permutations.TallakMaps, import: true
   doctest Permutations.SJT, import: true
 
   test "sjt algorithm works with [1, 2, 3]" do

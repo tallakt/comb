@@ -10,21 +10,6 @@ defmodule Mix.Tasks.Benchmark do
       fn -> Permutations.Naive.permutation(numbers) end
     )
 
-    IO.puts "-- tallaks enum impl"
-    Benchwarmer.benchmark(
-      fn -> Permutations.TallakEnum.permutation(numbers) end
-    )
-
-    IO.puts "-- tallaks stream impl"
-    Benchwarmer.benchmark(
-      fn -> Permutations.TallakStream.permutation(numbers) |> Enum.to_list end
-    )
-
-    IO.puts "-- tallaks maps impl"
-    Benchwarmer.benchmark(
-      fn -> Permutations.TallakMaps.permutation(numbers) |> Enum.to_list end
-    )
-
     IO.puts "-- SJT"
     Benchwarmer.benchmark(
       fn -> Permutations.SJT.permutation(numbers) |> Enum.to_list end
