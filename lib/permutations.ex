@@ -145,6 +145,7 @@ defmodule Permutations do
   end
 
   defmodule SJT do
+    defstruct last: 0, state: %{}
     @doc """
 
     ## Examples
@@ -158,72 +159,77 @@ defmodule Permutations do
     def permutation(enum) do
       state = 
         for {e, i} <- Enum.with_index(enum),
-          do: {initial_direction_for(i), i, e}
-      Stream.unfold(state, &do_permutation/1)
+          into: %{},
+          do: {i, {initial_direction_for(i), i, e}}
+      sjt = %SJT{state: state, last: Enum.count(state) - 1}
+      Stream.unfold(sjt, &do_permutation/1)
     end
 
     defp initial_direction_for(0), do: :z
     defp initial_direction_for(_), do: :-
 
-    defp advance(state) do
-      max = state |> Enum.with_index |> Enum.max_by(&max_value_for/1)
-      penultimate = Enum.count(state) - 2
-      case max do
-        {{:z, _, _}, _} ->
-          nil
+    defp advance(sjt = %SJT{state: state, last: last}) do
+      max = state |> Enum.max_by(&max_value_for/1)
+      penultimate = last - 1
+      new_state = 
+        case max do
+          {_, {:z, _, _}} ->
+            nil
 
-        {{:-, n, el}, 1} -> # left end, move, and reset direction
-          state
-          |> List.delete_at(1)
-          |> List.insert_at(0, {:z, n, el})
+          {1, {:-, n, el}} -> # left end, move, and reset direction
+            state
+            |> Map.put(1, Map.fetch!(state, 0))
+            |> Map.put(0, {:z, n, el})
 
-        {{:+, n, el}, ^penultimate} -> # left end, move, and reset direction
-          state
-          |> :lists.reverse
-          |> List.delete_at(1)
-          |> List.insert_at(0, {:z, n, el})
-          |> :lists.reverse
+          {^penultimate, {:+, n, el}} -> # left end, move, and reset direction
+            state
+            |> Map.put(penultimate, Map.fetch!(state, last))
+            |> Map.put(last, {:z, n, el})
 
-        {state_el = {:-, n, el}, pos} ->
-          case Enum.fetch!(state, pos - 2) do
-            {_, other_n, _} when other_n > n ->
-              state
-              |> List.delete_at(pos)
-              |> List.insert_at(pos - 1, {:z, n, el})
-              |> List.update_at(pos - 2, fn {_, a, b} -> {:+, a, b} end)
+          {pos, state_el = {:-, n, el}} ->
+            case Map.fetch!(state, pos - 2) do
+              {_, other_n, _} when other_n > n ->
+                state
+                |> Map.put(pos, Map.fetch!(state, pos - 1))
+                |> Map.put(pos - 1, {:z, n, el})
+                |> Map.update!(pos - 2, fn {_, a, b} -> {:+, a, b} end)
 
-            _ ->
-              state
-              |> List.delete_at(pos)
-              |> List.insert_at(pos - 1, state_el)
-          end
+              _ ->
+                state
+                |> Map.put(pos, Map.fetch!(state, pos - 1))
+                |> Map.put(pos - 1, state_el)
+            end
 
-        {state_el = {:+, n, el}, pos} ->
-          case Enum.fetch!(state, pos + 2) do
-            {_, other_n, _} when other_n > n ->
-              state
-              |> List.delete_at(pos)
-              |> List.insert_at(pos + 1, {:z, n, el})
-              |> List.update_at(pos + 2, fn {_, a, b} -> {:-, a, b} end)
+          {pos, state_el = {:+, n, el}} ->
+            case Map.fetch!(state, pos + 2) do
+              {_, other_n, _} when other_n > n ->
+                state
+                |> Map.put(pos, Map.fetch!(state, pos + 1))
+                |> Map.put(pos + 1, {:z, n, el})
+                |> Map.update!(pos + 2, fn {_, a, b} -> {:-, a, b} end)
 
-            _ ->
-              state
-              |> List.delete_at(pos)
-              |> List.insert_at(pos + 1, state_el)
-          end
-      end
+              _ ->
+                state
+                |> Map.put(pos, Map.fetch!(state, pos + 1))
+                |> Map.put(pos + 1, state_el)
+            end
+        end
+      %{sjt | state: new_state}
     end
 
 
-    defp do_permutation(nil), do: nil
+    defp do_permutation(%SJT{state: nil}), do: nil
 
-    defp do_permutation(state) do
-      result = state |> Enum.map(fn {_, _, el} -> el end)
-      {result, advance(state)}
+    defp do_permutation(sjt) do
+      {extract_result(sjt), advance(sjt)}
     end
 
-    defp max_value_for({{:z, _, _}, _}), do: -1
-    defp max_value_for({{_, i, _}, _}), do: i
+    defp extract_result(%SJT{state: state, last: last}) do
+      (0..last) |> Enum.map(&(Map.fetch!(state, &1)) |> elem(2))
+    end
+
+    defp max_value_for({_, {:z, _, _}}), do: -1
+    defp max_value_for({_, {_, i, _}}), do: i
 
   end
   defmodule Naive do
