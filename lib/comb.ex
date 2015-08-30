@@ -1,4 +1,4 @@
-defmodule Permutations do
+defmodule Comb do
 
 
   defmodule SJT do
@@ -193,22 +193,26 @@ defmodule Permutations do
     end
   end
 
+  defdelegate permutations(enum), to: Comb.Naive
+  defdelegate stream_permutations(enum), to: Comb.LazyPermutations
+
   defmodule Wless1 do
     @doc """
 
     ## Examples
 
-        iex> combinations([1, 2, 3], 2) |> Enum.sort
+        iex> combinations([1, 2, 3], 2)
         [[1, 2], [1, 3], [2, 3]]
 
     """
-    def combinations(collection, k) do
-      List.last(do_combinations(collection, k))
+    def combinations(enum, k) do
+      List.last(do_combinations(enum, k))
     end
 
-    defp do_combinations(list, k) do
+    defp do_combinations(enum, k) do
       combinations_by_length = [[[]]|List.duplicate([], k)]
 
+      list = Enum.to_list(enum)
       List.foldr list, combinations_by_length, fn x, next ->
         sub = :lists.droplast(next)
         step = [[]|(for l <- sub, do: (for s <- l, do: [x|s]))]
@@ -221,7 +225,7 @@ defmodule Permutations do
 
     ## Examples
 
-        iex> combinations2([1, 2, 3], 2) |> Enum.sort
+        iex> combinations2([1, 2, 3], 2)
         [[1, 2], [1, 3], [2, 3]]
 
     """
@@ -231,4 +235,7 @@ defmodule Permutations do
       (for l <- combinations2(t, k - 1), do: [h|l]) ++ combinations2(t, k)
     end
   end
+
+  defdelegate combinations(enum, n), to: Comb.Wless1
+
 end
