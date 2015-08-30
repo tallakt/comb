@@ -144,6 +144,88 @@ defmodule Permutations do
     end
   end
 
+  defmodule SJT do
+    @doc """
+
+    ## Examples
+
+        iex> permutation([1, 2, 3]) |> Enum.sort
+        [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+
+    """
+    def permutation([]), do: [[]]
+
+    def permutation(enum) do
+      state = 
+        for {e, i} <- Enum.with_index(enum),
+          do: {initial_direction_for(i), i, e}
+      Stream.unfold(state, &do_permutation/1)
+    end
+
+    defp initial_direction_for(0), do: :z
+    defp initial_direction_for(_), do: :-
+
+    defp advance(state) do
+      max = state |> Enum.with_index |> Enum.max_by(&max_value_for/1)
+      penultimate = Enum.count(state) - 2
+      case max do
+        {{:z, _, _}, _} ->
+          nil
+
+        {{:-, n, el}, 1} -> # left end, move, and reset direction
+          state
+          |> List.delete_at(1)
+          |> List.insert_at(0, {:z, n, el})
+
+        {{:+, n, el}, ^penultimate} -> # left end, move, and reset direction
+          state
+          |> :lists.reverse
+          |> List.delete_at(1)
+          |> List.insert_at(0, {:z, n, el})
+          |> :lists.reverse
+
+        {state_el = {:-, n, el}, pos} ->
+          case Enum.fetch!(state, pos - 2) do
+            {_, other_n, _} when other_n > n ->
+              state
+              |> List.delete_at(pos)
+              |> List.insert_at(pos - 1, {:z, n, el})
+              |> List.update_at(pos - 2, fn {_, a, b} -> {:+, a, b} end)
+
+            _ ->
+              state
+              |> List.delete_at(pos)
+              |> List.insert_at(pos - 1, state_el)
+          end
+
+        {state_el = {:+, n, el}, pos} ->
+          case Enum.fetch!(state, pos + 2) do
+            {_, other_n, _} when other_n > n ->
+              state
+              |> List.delete_at(pos)
+              |> List.insert_at(pos + 1, {:z, n, el})
+              |> List.update_at(pos + 2, fn {_, a, b} -> {:-, a, b} end)
+
+            _ ->
+              state
+              |> List.delete_at(pos)
+              |> List.insert_at(pos + 1, state_el)
+          end
+      end
+    end
+
+
+    defp do_permutation(nil), do: nil
+
+    defp do_permutation(state) do
+      result = state |> Enum.map(fn {_, _, el} -> el end)
+      {result, advance(state)}
+    end
+
+    defp max_value_for({{:z, _, _}, _}), do: -1
+    defp max_value_for({{_, i, _}, _}), do: i
+
+  end
   defmodule Naive do
     @doc """
 

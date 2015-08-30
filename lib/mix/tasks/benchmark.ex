@@ -1,43 +1,49 @@
 defmodule Mix.Tasks.Benchmark do
   use Mix.Task
 
-  def run_tallak_stream(enumerable) do
-    Permutations.TallakStream.permutation(enumerable) 
-    |> Enum.to_list
-  end
-
-  def run_tallak_maps_stream(enumerable) do
-    Permutations.TallakMaps.permutation(enumerable) 
-    |> Enum.to_list
-  end
-
-  def run_lazy_stream(enumerable) do
-    Permutations.LazyPermutations.permutation(enumerable) 
-    |> Enum.to_list
-  end
-
   def run(_) do
     numbers = for x <- 1..8, do: x
 
     IO.puts "Testing permutation"
+    IO.puts "-- naive"
     Benchwarmer.benchmark(
-      [ 
-        &Permutations.Naive.permutation/1,
-        &Permutations.TallakEnum.permutation/1,
-        &run_tallak_stream/1,
-        &run_tallak_maps_stream/1,
-        &run_lazy_stream/1,
-      ],
-      [numbers]
+      fn -> Permutations.Naive.permutation(numbers) end
+    )
+
+    IO.puts "-- tallaks enum impl"
+    Benchwarmer.benchmark(
+      fn -> Permutations.TallakEnum.permutation(numbers) end
+    )
+
+    IO.puts "-- tallaks stream impl"
+    Benchwarmer.benchmark(
+      fn -> Permutations.TallakStream.permutation(numbers) |> Enum.to_list end
+    )
+
+    IO.puts "-- tallaks maps impl"
+    Benchwarmer.benchmark(
+      fn -> Permutations.TallakMaps.permutation(numbers) |> Enum.to_list end
+    )
+
+    IO.puts "-- SJT"
+    Benchwarmer.benchmark(
+      fn -> Permutations.SJT.permutation(numbers) |> Enum.to_list end
+    )
+
+    IO.puts "-- LazyPermutations"
+    Benchwarmer.benchmark(
+      fn -> Permutations.LazyPermutations.permutation(numbers) |> Enum.to_list end
     )
 
     IO.puts "Testing combination"
+    IO.puts "-- Wless1 Optimized"
     Benchwarmer.benchmark(
-      [ 
-        &Permutations.Wless1.combinations/2,
-        &Permutations.Wless1.combinations2/2
-      ],
-      [numbers, 5]
+      fn -> Permutations.Wless1.combinations(numbers, 5) end
+    )
+
+    IO.puts "-- Wless1 Naive"
+    Benchwarmer.benchmark(
+      fn -> Permutations.Wless1.combinations2(numbers, 5) end
     )
   end
 end
