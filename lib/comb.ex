@@ -143,22 +143,32 @@ defmodule Comb do
   defmodule Table do
     require Comb.Naive
 
-    for n <- 1..5 do
-      for {perm, i} <- Enum.with_index(Comb.Naive.permutation(1..n)) do
-        def do_permutation_table(unquote(n), unquote(i + 1)), do: unquote(perm)
+    @table_size 5
+
+    # This is a macro helper
+    to_vars = 
+      fn enum ->
+        for i <- enum, do: "a#{i}" |> String.to_atom |> Macro.var(__MODULE__)
+      end
+
+    for count <- 1..@table_size do
+      for {perm, i} <- Enum.with_index(Comb.Naive.permutation(1..count)) do
+        def do_permutation_table(unquote(count), unquote(i + 1), 
+                              [unquote_splicing(to_vars.(count..1))], tail) do
+          [unquote_splicing(to_vars.(perm)) | tail]
+        end
       end
     end
 
-    defp permutation_numbers(count) do
-      1..Enum.reduce(1..count, &Kernel.*/2)
-      |> Stream.map(fn i -> do_permutation_table(count, i) end)
+    def permutation(enum) do
+      list = Enum.to_list enum
+      count = Enum.count(list)
+      do_permutation list, count, []
     end
 
-
-    def permutation(enum) do
-      enum_map = for {e,i} <- Enum.with_index(enum), do: {i+1,e}, into: %{}
-      permutation_numbers(Enum.count(enum_map))
-      |> Stream.map(fn perm -> for i <- perm, do: Map.fetch!(enum_map, i) end)
+    def do_permutation(list, count, tail) when count <= @table_size do
+      1..Enum.reduce(1..count, &Kernel.*/2)
+      |> Stream.map(fn i -> do_permutation_table(count, i, list, tail) end)
     end
   end
 
