@@ -29,6 +29,12 @@ defmodule PermutationsTest do
       Comb.Naive.permutation(enum) |> Enum.sort
   end
 
+  test "table algorithm benchmarked with naive" do
+    enum = 0..7 |> Enum.to_list
+    assert Comb.Table.permutation(enum) |> Enum.sort == 
+      Comb.Naive.permutation(enum) |> Enum.sort
+  end
+
   test "sjt algorithm benchmarked with naive" do
     enum = 0..3 |> Enum.to_list
     assert Comb.SJT.permutation(enum) |> Enum.take(4*3*2+1) |> Enum.sort == 

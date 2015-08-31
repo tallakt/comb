@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Benchmark do
   use Mix.Task
 
   def run(_) do
-    numbers = for x <- 1..5, do: x
+    numbers = for x <- 1..8, do: x
 
     IO.puts "Testing permutation"
     IO.puts "-- naive"
