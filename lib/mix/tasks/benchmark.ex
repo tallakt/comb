@@ -12,17 +12,22 @@ defmodule Mix.Tasks.Benchmark do
 
     IO.puts "-- SJT"
     Benchwarmer.benchmark(
-      fn -> Comb.SJT.permutation(numbers) |> Enum.to_list end
+      fn -> Comb.SJT.permutation(numbers) |> Stream.run end
     )
 
     IO.puts "-- LazyPermutations"
     Benchwarmer.benchmark(
-      fn -> Comb.LazyPermutations.permutation(numbers) |> Enum.to_list end
+      fn -> Comb.LazyPermutations.permutation(numbers) |> Stream.run end
     )
 
     IO.puts "-- Table"
     Benchwarmer.benchmark(
-      fn -> Comb.Table.permutation(numbers) |> Enum.to_list end
+      fn -> Comb.Table.permutation(numbers) end
+    )
+
+    IO.puts "-- Table stream"
+    Benchwarmer.benchmark(
+      fn -> Comb.Table.permutation_stream(numbers) |> Stream.run end
     )
 
     IO.puts "Testing combination"

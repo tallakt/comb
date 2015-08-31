@@ -163,22 +163,39 @@ defmodule Comb do
     def permutation(enum) do
       list = Enum.to_list enum
       count = Enum.count(list)
-      do_permutation list, count, []
+      do_permutation_enum list, count, []
     end
 
-    def do_permutation(list, count, tail) when count <= @table_size do
+    defp do_permutation_enum(list, count, tail) when count <= @table_size do
+      1..Enum.reduce(1..count, &Kernel.*/2)
+      |> Enum.map(fn i -> do_permutation_table(count, i, list, tail) end)
+    end
+
+    # For permutations larger than table size, approach like naive algorithm
+    defp do_permutation_enum(list, count, tail) do
+      list
+      |> Enum.flat_map(fn el ->
+          do_permutation_stream(list -- [el], count - 1, [el|tail])
+        end)
+    end
+
+    def permutation_stream(enum) do
+      list = Enum.to_list enum
+      count = Enum.count(list)
+      do_permutation_stream(list, count, [])
+    end
+
+    defp do_permutation_stream(list, count, tail) when count <= @table_size do
       1..Enum.reduce(1..count, &Kernel.*/2)
       |> Stream.map(fn i -> do_permutation_table(count, i, list, tail) end)
     end
 
-    # For permutations larger than table size, split the enum into chunks of at
-    # most table size elements. For each such chunk, iterate through
-    # permutations and combine with stream of permutations for the rest of the
-    # elements. This is all because the table size increases rapidly with size
-    # above n > 5
-    def do_permutation(list, count, tail) do
+    # For permutations larger than table size, approach like naive algorithm
+    defp do_permutation_stream(list, count, tail) do
       list
-      |> Stream.flat_map(fn el -> do_permutation(list -- [el], count - 1, [el|tail]) end)
+      |> Stream.flat_map(fn el ->
+          do_permutation_stream(list -- [el], count - 1, [el|tail])
+        end)
     end
   end
 
