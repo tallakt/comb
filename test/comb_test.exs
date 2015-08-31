@@ -10,6 +10,11 @@ defmodule PermutationsTest do
       [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
   end
 
+  test "table algorithm works with [1, 2, 3]" do
+    assert Comb.Table.permutation([1, 2, 3]) |> Enum.sort ==
+      [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+  end
+
   test "sjt algorithm works with [:one]" do
     assert Comb.SJT.permutation([:one]) |> Enum.sort == [[:one]]
   end

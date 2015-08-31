@@ -140,6 +140,28 @@ defmodule Comb do
     def permutation(enum), do: permutation(Enum.to_list(enum))
   end
 
+  defmodule Table do
+    require Comb.Naive
+
+    for n <- 1..5 do
+      for {perm, i} <- Enum.with_index(Comb.Naive.permutation(1..n)) do
+        def do_permutation_table(unquote(n), unquote(i + 1)), do: unquote(perm)
+      end
+    end
+
+    defp permutation_numbers(count) do
+      1..Enum.reduce(1..count, &Kernel.*/2)
+      |> Stream.map(fn i -> do_permutation_table(count, i) end)
+    end
+
+
+    def permutation(enum) do
+      enum_map = for {e,i} <- Enum.with_index(enum), do: {i+1,e}, into: %{}
+      permutation_numbers(Enum.count(enum_map))
+      |> Stream.map(fn perm -> for i <- perm, do: Map.fetch!(enum_map, i) end)
+    end
+  end
+
   # slack @martinsvalin
   defmodule LazyPermutations  do
     @doc """

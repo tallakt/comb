@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Benchmark do
   use Mix.Task
 
   def run(_) do
-    numbers = for x <- 1..8, do: x
+    numbers = for x <- 1..5, do: x
 
     IO.puts "Testing permutation"
     IO.puts "-- naive"
@@ -18,6 +18,11 @@ defmodule Mix.Tasks.Benchmark do
     IO.puts "-- LazyPermutations"
     Benchwarmer.benchmark(
       fn -> Comb.LazyPermutations.permutation(numbers) |> Enum.to_list end
+    )
+
+    IO.puts "-- Table"
+    Benchwarmer.benchmark(
+      fn -> Comb.Table.permutation(numbers) |> Enum.to_list end
     )
 
     IO.puts "Testing combination"
