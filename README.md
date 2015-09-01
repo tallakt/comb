@@ -38,3 +38,9 @@ Testing combination
 1.4 sec    16K iterations   88.61 μs/op
 ```
 
+## Credits
+
+- Martin Svalin / @martinsvalin: Original LazyPermutations module
+- Tommy Fisher / @wless1 on Slack: Original combinations and combinations2
+- Tallak Tveide / @tallakt: Other stuff
+
