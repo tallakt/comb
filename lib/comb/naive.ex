@@ -33,13 +33,11 @@ defmodule Comb.Naive do
   def partitions(enum) do
     list = Enum.to_list enum
     n = Enum.count list
-    Enum.map(n..1, &(do_partition_for_size(list, &1)))
-    |> Enum.sort
+    Enum.flat_map(n..1, &(do_partition_for_size(list, &1)))
     |> Enum.uniq
   end
 
   defp do_partitions([]), do: [[]]
-  defp do_partitions(l = [_]), do: [l]
 
   defp do_partitions(list) do
     n = Enum.count list
@@ -55,7 +53,7 @@ defmodule Comb.Naive do
     |> combinations(size)
     |> Enum.flat_map(fn comb ->
         do_partitions(list -- comb)
-        |> Enum.map(&([comb] ++ &1))
+        |> Enum.map(&(Enum.sort([comb] ++ &1)))
       end)
     |> IO.inspect
   end
