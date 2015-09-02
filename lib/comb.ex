@@ -7,6 +7,16 @@ defmodule Comb do
     |> Enum.join("\n")
     )
 
+  @spec analyze(Enum.t) :: {Map.t, integer, integer}
+  defp analyze(enum) do
+    enum
+    |> Enum.reduce({%{}, 0, 0}, fn e, {freq, m, c} ->
+        new_freq = Map.update(freq, e, 1, &(&1 + 1))
+        new_max = max(Map.fetch!(new_freq, e), m)
+        {new_freq, new_max, c + 1}
+      end)
+  end
+
 
   @doc """
   This function returns a list containing all combinations of one element
@@ -142,9 +152,25 @@ defmodule Comb do
       iex> count_permutations([1, 2, 3])
       6
 
+      iex> count_permutations([1, 1, 2])
+      3
+
   """
   @spec count_permutations(Enum.t) :: integer
-  def count_permutations(enum), do: permutations(enum) |> Enum.count
+  def count_permutations(enum) do
+    import Comb.Factorial
+    {frequencies, max, count} = analyze(enum)
+
+    if max <= 1 do
+      Comb.Factorial.factorial(count)
+    else
+      frequencies
+      |> Map.values
+      |> Enum.map(&factorial/1)
+      |> Enum.reduce(Comb.Factorial.factorial(count), &(div(&2, &1)))
+    end
+  end
+
   
   @doc """
   Calculates permutations starting from element `n` where `n` is zero based.
