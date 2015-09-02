@@ -47,15 +47,12 @@ defmodule Comb.Naive do
   # iterasjone
 
   defp do_partition_for_size(list, size) do
-    IO.puts "---"
-    IO.inspect {list, size}
     list
     |> combinations(size)
     |> Enum.flat_map(fn comb ->
         do_partitions(list -- comb)
         |> Enum.map(&(Enum.sort([comb] ++ &1)))
       end)
-    |> IO.inspect
   end
 
 
