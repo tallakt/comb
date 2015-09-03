@@ -10,10 +10,10 @@ defmodule Comb do
   @spec analyze(Enum.t) :: {Map.t, integer, integer}
   defp analyze(enum) do
     enum
-    |> Enum.reduce({%{}, 0, 0}, fn e, {freq, m, c} ->
+    |> Enum.reduce({%{}, 0, 0}, fn e, {freq, max, count} ->
         new_freq = Map.update(freq, e, 1, &(&1 + 1))
-        new_max = max(Map.fetch!(new_freq, e), m)
-        {new_freq, new_max, c + 1}
+        new_max = max(Map.fetch!(new_freq, e), max)
+        {new_freq, new_max, count + 1}
       end)
   end
 
@@ -133,14 +133,14 @@ defmodule Comb do
   ## Examples
 
       iex> permutations(1..3) |> Enum.to_list
-      [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+      [[1, 2, 3], [2, 1, 3], [1, 3, 2], [3, 1, 2], [2, 3, 1], [3, 2, 1]]
 
       iex> permutations([1, 1, 2]) |> Enum.to_list
       [[1, 1, 2], [1, 2, 1], [2, 1, 1]]
 
   """
   @spec permutations(Enum.t) :: Enum.t
-  defdelegate permutations(enum), to: Comb.Naive
+  defdelegate permutations(enum), to: Comb.TablePermutations
   # At the moment this one returns permutations in incorrect order
   # defdelegate permutations(enum), to: Comb.TablePermutations
 
@@ -179,7 +179,7 @@ defmodule Comb do
   ## Examples
 
       iex> drop_permutations([1, 2, 3], 2) |> Enum.to_list
-      [[2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+      [[1, 3, 2], [3, 1, 2], [2, 3, 1], [3, 2, 1]]
 
   """
   @spec drop_permutations(Enum.t, integer) :: Enum.t
@@ -192,7 +192,7 @@ defmodule Comb do
   ## Examples
 
       iex> nth_permutation([1, 2, 3], 1)
-      [1, 3, 2]
+      [2, 1, 3]
 
   """
   @spec nth_permutation(Enum.t, integer) :: list
@@ -205,9 +205,9 @@ defmodule Comb do
   ## Examples
 
       iex> permutation_index([1, 3, 2])
-      1
+      2
 
-      iex> nth_permutation([1, 2, 3], 1)
+      iex> nth_permutation([1, 2, 3], 2)
       [1, 3, 2]
 
   """

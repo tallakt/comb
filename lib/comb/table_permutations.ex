@@ -12,22 +12,32 @@ defmodule Comb.TablePermutations do
   for count <- 1..@table_size do
     for {perm, i} <- Enum.with_index(Comb.Naive.permutations(1..count)) do
       def do_permutations_table(unquote(count), unquote(i + 1), 
-                            [unquote_splicing(to_vars.(count..1))], tail) do
+                            [unquote_splicing(to_vars.(1..count))], tail) do
         [unquote_splicing(to_vars.(perm)) | tail]
       end
     end
   end
 
   def permutations(enum) do
-    list = Enum.to_list enum
+    list = Enum.reverse enum
+    any_dups? =
+      list
+      |> Enum.sort
+      |> Enum.chunk(2, 1)
+      |> Enum.any?(&(match?([x, x], &1)))
+
     count = Enum.count(list)
-    do_permutations(list, count, [])
+    result = do_permutations(list, count, [])
+    if any_dups? do
+      result = result |> Stream.uniq
+    end
+    result
   end
 
   defp do_permutations([], _, _), do: [[]]
 
   defp do_permutations(list, count, tail) when count <= @table_size do
-    1..Enum.reduce(1..count, &Kernel.*/2)
+    1..Comb.Factorial.factorial(count)
     |> Stream.map(fn i -> do_permutations_table(count, i, list, tail) end)
   end
 

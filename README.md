@@ -15,19 +15,19 @@ parameters. This is best shown in the examples section.
 
 ```elixir
     iex> permutations(1..3) |> Enum.to_list
-    [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+    [[1, 2, 3], [2, 1, 3], [1, 3, 2], [3, 1, 2], [2, 3, 1], [3, 2, 1]]
 
     iex> permutations([1, 1, 2]) |> Enum.to_list
     [[1, 1, 2], [1, 2, 1], [2, 1, 1]]
 
     iex> permutation_index([1, 3, 2])
-    1
+    2
 
     iex> drop_permutations(1..3, 3) |> Enum.to_list
-    [[2, 3, 1], [3, 1, 2], [3, 2, 1]]
+    [[3, 1, 2], [2, 3, 1], [3, 2, 1]]
 
     iex> nth_permutation(1..3, 3)
-    [2, 3, 1]
+    [3, 1, 2]
 ```
 
 ### Combinations

@@ -67,7 +67,7 @@ defmodule Comb.Naive do
   def permutations([]), do: [[]]
 
   def permutations(list) when is_list(list) do
-    (for h <- list, t <- permutations(list -- [h]), do: [h | t])
+    (for h <- list, t <- permutations(list -- [h]), do: t ++ [h])
     |> Enum.uniq
   end
 

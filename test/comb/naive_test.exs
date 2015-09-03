@@ -75,16 +75,19 @@ defmodule Comb.NaiveTest do
   end
 
   test "permutation_index repeated parameters" do
-    assert permutation_index([2, 1, 1]) == 2
+    # Note naive doesnt support unsorted elements
+    perm = permutations([1, 1, 1, 2, 2, 3]) |> Enum.fetch!(3)
+    assert permutation_index(perm) == 3
   end
 
   test "permutations basic usage" do
-    assert permutations(1..3) ==
-      [[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]]
+    assert permutations(1..3)|> Enum.sort ==
+      Enum.sort([[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]])
   end
 
   test "permutations repeated parameters" do
-    assert permutations([1, 1, 2]) == [[1, 1, 2], [1, 2, 1], [2, 1, 1]]
+    assert permutations([1, 1, 2]) |> Enum.sort ==
+      [[1, 1, 2], [1, 2, 1], [2, 1, 1]] |> Enum.sort
   end
 
   test "subsets basic usage" do
