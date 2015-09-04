@@ -7,17 +7,6 @@ defmodule Comb do
     |> Enum.join("\n")
     )
 
-  @spec analyze(Enum.t) :: {Map.t, integer, integer}
-  defp analyze(enum) do
-    enum
-    |> Enum.reduce({%{}, 0, 0}, fn e, {freq, max, count} ->
-        new_freq = Map.update(freq, e, 1, &(&1 + 1))
-        new_max = max(Map.fetch!(new_freq, e), max)
-        {new_freq, new_max, count + 1}
-      end)
-  end
-
-
   @doc """
   This function returns a list containing all combinations of one element
   from each `a` and `b`
@@ -159,15 +148,15 @@ defmodule Comb do
   @spec count_permutations(Enum.t) :: integer
   def count_permutations(enum) do
     import Comb.Factorial
-    {frequencies, max, count} = analyze(enum)
+    analysis = Comb.ListAnalyzer.analyze(enum)
 
-    if max <= 1 do
-      Comb.Factorial.factorial(count)
+    if analysis |> Comb.ListAnalyzer.all_unique? do
+      Comb.Factorial.factorial(analysis.count)
     else
-      frequencies
+      analysis.freq
       |> Map.values
       |> Enum.map(&factorial/1)
-      |> Enum.reduce(Comb.Factorial.factorial(count), &(div(&2, &1)))
+      |> Enum.reduce(Comb.Factorial.factorial(analysis.count), &(div(&2, &1)))
     end
   end
 

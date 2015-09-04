@@ -17,7 +17,7 @@ defmodule Mix.Tasks.Comb.Benchmark do
       end
       time
     end
-    percentage = Float.to_string(100 * t / t0, decimals: 1) |> String.rjust(6)
+    percentage = Float.to_string(100 * t / t0, decimals: 2) |> String.rjust(7)
     IO.puts "#{percentage}%: #{function} - #{description}"
   end
   @repeated6 [1, 1, 1, 2, 2, 3]

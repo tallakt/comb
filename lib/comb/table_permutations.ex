@@ -18,17 +18,18 @@ defmodule Comb.TablePermutations do
     end
   end
 
+  defp any_duplicates?(list) do
+    list
+    |> Enum.sort
+    |> Enum.chunk(2, 1)
+    |> Enum.any?(&(match?([x, x], &1)))
+  end
+
   def permutations(enum) do
     list = Enum.reverse enum
-    any_dups? =
-      list
-      |> Enum.sort
-      |> Enum.chunk(2, 1)
-      |> Enum.any?(&(match?([x, x], &1)))
-
     count = Enum.count(list)
     result = do_permutations(list, count, [])
-    if any_dups? do
+    if list |> any_duplicates? do
       result = result |> Stream.uniq
     end
     result
@@ -48,6 +49,10 @@ defmodule Comb.TablePermutations do
     |> Stream.flat_map(fn el ->
         do_permutations(list -- [el], count - 1, [el|tail])
       end)
+  end
+
+  def permutation_index(enum) do
+    _count = Enum.count enum
   end
 end
 
