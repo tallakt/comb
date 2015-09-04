@@ -38,7 +38,7 @@ defmodule Comb.TablePermutations do
   defp do_permutations([], _, _), do: [[]]
 
   defp do_permutations(list, count, tail) when count <= @table_size do
-    1..Comb.Factorial.factorial(count)
+    1..Comb.Math.factorial(count)
     |> Stream.map(fn i -> do_permutations_table(count, i, list, tail) end)
   end
 
@@ -52,7 +52,28 @@ defmodule Comb.TablePermutations do
   end
 
   def permutation_index(enum) do
-    _count = Enum.count enum
+    list = Enum.to_list enum
+    analysis = Comb.ListAnalyzer.analyze list
+    if Comb.ListAnalyzer.all_unique? do
+      do_permutation_index_unique(list, analysis.count)
+    else
+      list
+      |> Enum.sort
+      |> permutations
+      |> Enum.find_index(&(&1 == list))
+    end
+  end
+
+  def do_permutation_index_unique(list, count) do
+    _natural_number_order = # convert 'acb' -> [1, 3, 2]
+      list
+      |> Enum.with_index
+      |> Enum.sort
+      |> Enum.with_index
+      |> Enum.map(fn {{_, i0}, i1} -> {i0, i1} end)
+      |> Enum.sort
+      |> Enum.map(&(elem(&1, 1)))
+    _fact = Comb.Math.factorial(count - 1)
   end
 end
 

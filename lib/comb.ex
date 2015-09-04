@@ -147,16 +147,16 @@ defmodule Comb do
   """
   @spec count_permutations(Enum.t) :: integer
   def count_permutations(enum) do
-    import Comb.Factorial
+    import Comb.Math
     analysis = Comb.ListAnalyzer.analyze(enum)
 
     if analysis |> Comb.ListAnalyzer.all_unique? do
-      Comb.Factorial.factorial(analysis.count)
+      factorial(analysis.count)
     else
       analysis.freq
       |> Map.values
       |> Enum.map(&factorial/1)
-      |> Enum.reduce(Comb.Factorial.factorial(analysis.count), &(div(&2, &1)))
+      |> Enum.reduce(factorial(analysis.count), &(div(&2, &1)))
     end
   end
 

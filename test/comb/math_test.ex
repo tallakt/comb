@@ -1,7 +1,7 @@
-defmodule Comb.FactorialTest do
+defmodule Comb.MathTest do
   use ExUnit.Case, async: true
-  import Comb.Factorial
-  doctest Comb.Factorial, import: true
+  doctest Comb.Math, import: true
+  import Comb.Math
 
   test "first factorial numbers" do
     assert (for n <- 0..4, do: factorial(n)) ==

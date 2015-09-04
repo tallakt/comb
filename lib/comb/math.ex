@@ -1,6 +1,7 @@
-defmodule Comb.Factorial do
+defmodule Comb.Math do
   @moduledocs """
-  Contains a factorial function with a table for the first 30 results
+  Some useful math functions. These are generally used internally by the
+  library.
   """
   factorial_fn = fn n ->
     inner = fn
@@ -13,7 +14,7 @@ defmodule Comb.Factorial do
   end
 
   @doc """
-  Returns the factorial of a number. 
+  Returns the factorial of a number. Highly optimized for n < 30
 
   ## Example
 
