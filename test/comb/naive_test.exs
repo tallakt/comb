@@ -5,7 +5,7 @@ defmodule Comb.NaiveTest do
   test "cartesian product" do
     assert cartesian_product(1..2, 3..4) == [[1, 3], [1, 4], [2, 3], [2, 4]]
   end
-  
+
   test "combinations basic usage" do
     assert combinations(1..3, 2) == [[1, 2], [1, 3], [2, 3]]
   end
@@ -31,42 +31,41 @@ defmodule Comb.NaiveTest do
   end
 
   test "drop permutations basic usage" do
-    assert drop_permutations(1..3, 3) == (permutations(1..3) |> Enum.drop(3))
+    assert drop_permutations(1..3, 3) == permutations(1..3) |> Enum.drop(3)
   end
 
   test "drop permutations repeated parameters" do
     assert drop_permutations([1, 1, 2, 2], 3) ==
-      (permutations([1, 1, 2, 2]) |> Enum.drop(3))
+             permutations([1, 1, 2, 2]) |> Enum.drop(3)
   end
-
 
   test "nth_combination basic usage" do
     assert nth_combination(1..4, 2, 5) ==
-      (combinations(1..4, 2) |> Enum.fetch!(5))
+             combinations(1..4, 2) |> Enum.fetch!(5)
   end
 
   test "nth_combination repeated parameters" do
     assert nth_combination([1, 1, 2, 2, 3], 2, 4) ==
-      (combinations([1, 1, 2, 2, 3], 2) |> Enum.fetch!(4))
+             combinations([1, 1, 2, 2, 3], 2) |> Enum.fetch!(4)
   end
 
   test "nth_permutation basic usage" do
-    assert nth_permutation(1..3, 3) == (permutations(1..3) |> Enum.fetch!(3))
+    assert nth_permutation(1..3, 3) == permutations(1..3) |> Enum.fetch!(3)
   end
 
   test "nth_permutation repeated parameters" do
     assert nth_permutation([1, 1, 2, 2], 3) ==
-      (permutations([1, 1, 2, 2]) |> Enum.fetch!(3))
+             permutations([1, 1, 2, 2]) |> Enum.fetch!(3)
   end
 
   test "partitions basic usage" do
     assert partitions(1..3) ==
-      [[[1, 2, 3]], [[1, 2], [3]], [[1, 3], [2]], [[1], [2, 3]], [[1], [2], [3]]]
+             [[[1, 2, 3]], [[1, 2], [3]], [[1, 3], [2]], [[1], [2, 3]], [[1], [2], [3]]]
   end
 
   test "partitions repeated parameters" do
     assert partitions([1, 1, 2]) ==
-      [[[1, 1, 2]], [[1, 1], [2]], [[1], [1, 2]], [[1], [1], [2]]]
+             [[[1, 1, 2]], [[1, 1], [2]], [[1], [1, 2]], [[1], [1], [2]]]
   end
 
   test "permutation_index basic usage" do
@@ -81,18 +80,18 @@ defmodule Comb.NaiveTest do
   end
 
   test "permutations basic usage" do
-    assert permutations(1..3)|> Enum.sort ==
-      Enum.sort([[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]])
+    assert permutations(1..3) |> Enum.sort() ==
+             Enum.sort([[1, 2, 3], [1, 3, 2], [2, 1, 3], [2, 3, 1], [3, 1, 2], [3, 2, 1]])
   end
 
   test "permutations repeated parameters" do
-    assert permutations([1, 1, 2]) |> Enum.sort ==
-      [[1, 1, 2], [1, 2, 1], [2, 1, 1]] |> Enum.sort
+    assert permutations([1, 1, 2]) |> Enum.sort() ==
+             [[1, 1, 2], [1, 2, 1], [2, 1, 1]] |> Enum.sort()
   end
 
   test "subsets basic usage" do
     assert subsets(1..3) ==
-      [[], [1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]
+             [[], [1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]
   end
 
   test "subsets repeated parameters" do
@@ -100,9 +99,16 @@ defmodule Comb.NaiveTest do
   end
 
   test "selections basic usage" do
-    assert selections(1..2, 3) == 
-    [[1, 1, 1], [1, 1, 2], [1, 2, 1], [1, 2, 2], [2, 1, 1], [2, 1, 2],
-      [2, 2, 1], [2, 2, 2]]
+    assert selections(1..2, 3) ==
+             [
+               [1, 1, 1],
+               [1, 1, 2],
+               [1, 2, 1],
+               [1, 2, 2],
+               [2, 1, 1],
+               [2, 1, 2],
+               [2, 2, 1],
+               [2, 2, 2]
+             ]
   end
 end
-

@@ -1,5 +1,5 @@
 defmodule Comb.Math do
-  @moduledocs """
+  @moduledoc """
   Some useful math functions. These are generally used internally by the
   library.
   """
@@ -7,10 +7,12 @@ defmodule Comb.Math do
     inner = fn
       0, _ ->
         1
+
       n, self ->
-        n * self.(n-1, self)
+        n * self.(n - 1, self)
     end
-    inner.(n,inner)
+
+    inner.(n, inner)
   end
 
   @doc """

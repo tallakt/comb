@@ -4,14 +4,14 @@ defmodule Comb.ListAnalyzer do
 
   @type t :: %__MODULE__{}
 
-  @spec analyze(Enum.t) :: {Map.t, integer, integer}
+  @spec analyze(Enum.t()) :: {Map.t(), integer, integer}
   def analyze(enum) do
     enum
-    |> Enum.reduce(%ListAnalyzer{}, fn e, %ListAnalyzer{freq: f, count: c, max_freq: m}  ->
-        new_freq = Map.update(f, e, 1, &(&1 + 1))
-        new_max = max(Map.fetch!(new_freq, e), m)
-        %ListAnalyzer{freq: new_freq, max_freq: new_max, count: c + 1}
-      end)
+    |> Enum.reduce(%ListAnalyzer{}, fn e, %ListAnalyzer{freq: f, count: c, max_freq: m} ->
+      new_freq = Map.update(f, e, 1, &(&1 + 1))
+      new_max = max(Map.fetch!(new_freq, e), m)
+      %ListAnalyzer{freq: new_freq, max_freq: new_max, count: c + 1}
+    end)
   end
 
   @spec any_duplicates?(t) :: boolean

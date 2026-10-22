@@ -1,5 +1,7 @@
 # Comb
 
+[![CI](https://github.com/tallakt/comb/actions/workflows/ci.yml/badge.svg)](https://github.com/tallakt/comb/actions/workflows/ci.yml)
+
 The `Comb` package contains functions for combinatorics, such as
 `permutations/1` and `combinations/2`. Functions returning large lists will
 return these as a stream, while smaller values may be any enumerable.
@@ -115,40 +117,24 @@ also refer to the LICENSE file.
 To measure a revised algorithm, we have supplied a mix task to measure the
 speedup compared to a naive (non streamed) version of the algorithm.
 
-```elixir
-    $ mix benchmark
+```
+    $ mix comb.benchmark
 ```
 
+Each line gives the time taken as a percentage of the naive version, so
+smaller is faster:
+
 ```
-Testing permutation
--- naive
-*** #Function<1.110413037/0 in Mix.Tasks.Benchmark.run/1> ***
-1.5 sec     15 iterations   102477.34 μs/op
+[100% - like naive implementation, smaller is faster]
 
--- SJT
-*** #Function<2.110413037/0 in Mix.Tasks.Benchmark.run/1> ***
-2.1 sec      7 iterations   312474.58 μs/op
-
--- LazyPermutations
-*** #Function<3.110413037/0 in Mix.Tasks.Benchmark.run/1> ***
-2.2 sec      7 iterations   318748.15 μs/op
-
--- Table
-*** #Function<4.110413037/0 in Mix.Tasks.Benchmark.run/1> ***
-1.7 sec     31 iterations   55273.88 μs/op
-
--- Table stream
-*** #Function<5.110413037/0 in Mix.Tasks.Benchmark.run/1> ***
-1.3 sec     31 iterations   42615.81 μs/op
-
-Testing combination
--- Wless1 Optimized
-*** #Function<6.110413037/0 in Mix.Tasks.Benchmark.run/1> ***
-1.4 sec    32K iterations   43.37 μs/op
-
--- Wless1 Naive
-*** #Function<7.110413037/0 in Mix.Tasks.Benchmark.run/1> ***
-1.4 sec    16K iterations   88.61 μs/op
+  48.44%: combinations - 4-2 elements
+  56.60%: combinations - 6-2 elements
+   4.14%: combinations - 40-2 elements
+  50.00%: combinations - 6-2 with repeated elements
+  ...
+  24.67%: permutations - 7 element range
+  41.18%: permutations - 6 element with repetitions
+  ...
 ```
 
 ## Credits

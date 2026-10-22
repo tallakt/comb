@@ -1,11 +1,11 @@
 defmodule Comb do
-  # unfortunately exdoc doesnt support ``` fenced blocks
-  @moduledoc (
-    File.read!("README.md")
-    |> String.split("\n") 
-    |> Enum.reject(&(String.match?(&1, ~r/```|Build Status|Documentation Status/)))
-    |> Enum.join("\n")
-    )
+  # The README's examples run as doctests: drop the code fences around them,
+  # and the CI badge
+  @external_resource "README.md"
+  @moduledoc File.read!("README.md")
+             |> String.split("\n")
+             |> Enum.reject(&String.match?(&1, ~r/```|actions\/workflows/))
+             |> Enum.join("\n")
 
   @doc """
   This function returns a list containing all combinations of one element
@@ -17,11 +17,10 @@ defmodule Comb do
       [[1, 3], [1, 4], [2, 3], [2, 4]]
 
   """
-  @spec cartesian_product(Enum.t, Enum.t) :: [list]
+  @spec cartesian_product(Enum.t(), Enum.t()) :: [list]
   def cartesian_product(a, b) do
     for x <- a, y <- b, do: [x, y]
   end
-  
 
   @doc """
   Returns any combination of the elements in `enum` with exactly `k` elements.
@@ -36,21 +35,22 @@ defmodule Comb do
       [[1, 1], [1, 2]]
 
   """
-  @spec combinations(Enum.t, integer) :: Enum.t
+  @spec combinations(Enum.t(), integer) :: Enum.t()
   def combinations(enum, k) do
     List.last(do_combinations(enum, k))
-    |> Enum.uniq
+    |> Enum.uniq()
   end
 
   defp do_combinations(enum, k) do
-    combinations_by_length = [[[]]|List.duplicate([], k)]
+    combinations_by_length = [[[]] | List.duplicate([], k)]
 
     list = Enum.to_list(enum)
-    List.foldr list, combinations_by_length, fn x, next ->
+
+    List.foldr(list, combinations_by_length, fn x, next ->
       sub = :lists.droplast(next)
-      step = [[]|(for l <- sub, do: (for s <- l, do: [x|s]))]
+      step = [[] | for(l <- sub, do: for(s <- l, do: [x | s]))]
       :lists.zipwith(&:lists.append/2, step, next)
-    end
+    end)
   end
 
   @doc """
@@ -62,9 +62,9 @@ defmodule Comb do
       3
 
   """
-  @spec count_combinations(Enum.t, integer) :: Enum.integer
-  def count_combinations(enum, k), do: combinations(enum, k) |> Enum.count
-  
+  @spec count_combinations(Enum.t(), integer) :: integer
+  def count_combinations(enum, k), do: combinations(enum, k) |> Enum.count()
+
   @doc """
   Returns the nth combination that `combinations/2` would have returned. `n` is
   zero based.
@@ -75,9 +75,9 @@ defmodule Comb do
       [1, 3]
 
   """
-  @spec nth_combination(Enum.t, integer, integer) :: list | no_return
+  @spec nth_combination(Enum.t(), integer, integer) :: list | no_return
   def nth_combination(enum, k, n), do: combinations(enum, k) |> Enum.fetch!(n)
-  
+
   @doc """
   Partitions `enum` into any groups in sum containing all elements.
 
@@ -90,28 +90,28 @@ defmodule Comb do
       [[[1, 1, 2]], [[1, 1], [2]], [[1], [1, 2]], [[1], [1], [2]]]
 
   """
-  @spec partitions(Enum.t) :: Enum.t
+  @spec partitions(Enum.t()) :: Enum.t()
   def partitions(enum) do
-    list = Enum.to_list enum
-    n = Enum.count list
-    Enum.flat_map(n..1, &(do_partition_for_size(list, &1)))
-    |> Enum.uniq
+    enum
+    |> Enum.to_list()
+    |> do_partitions
+    |> Enum.uniq()
   end
 
   defp do_partitions([]), do: [[]]
 
   defp do_partitions(list) do
-    n = Enum.count list
-    Enum.flat_map(n..1, &(do_partition_for_size(list, &1)))
+    n = Enum.count(list)
+    Enum.flat_map(n..1//-1, &do_partition_for_size(list, &1))
   end
 
   defp do_partition_for_size(list, size) do
     list
     |> combinations(size)
     |> Enum.flat_map(fn comb ->
-        do_partitions(list -- comb)
-        |> Enum.map(&(Enum.sort([comb] ++ &1)))
-      end)
+      do_partitions(list -- comb)
+      |> Enum.map(&Enum.sort([comb] ++ &1))
+    end)
   end
 
   @doc """
@@ -128,10 +128,8 @@ defmodule Comb do
       [[1, 1, 2], [1, 2, 1], [2, 1, 1]]
 
   """
-  @spec permutations(Enum.t) :: Enum.t
+  @spec permutations(Enum.t()) :: Enum.t()
   defdelegate permutations(enum), to: Comb.TablePermutations
-  # At the moment this one returns permutations in incorrect order
-  # defdelegate permutations(enum), to: Comb.TablePermutations
 
   @doc """
   Returns the number of elements `permutations/1` would have returned.
@@ -145,22 +143,21 @@ defmodule Comb do
       3
 
   """
-  @spec count_permutations(Enum.t) :: integer
+  @spec count_permutations(Enum.t()) :: integer
   def count_permutations(enum) do
     import Comb.Math
     analysis = Comb.ListAnalyzer.analyze(enum)
 
-    if analysis |> Comb.ListAnalyzer.all_unique? do
+    if analysis |> Comb.ListAnalyzer.all_unique?() do
       factorial(analysis.count)
     else
       analysis.freq
-      |> Map.values
+      |> Map.values()
       |> Enum.map(&factorial/1)
-      |> Enum.reduce(factorial(analysis.count), &(div(&2, &1)))
+      |> Enum.reduce(factorial(analysis.count), &div(&2, &1))
     end
   end
 
-  
   @doc """
   Calculates permutations starting from element `n` where `n` is zero based.
   This is more eficient than combining `permutations/1` and `Stream.drop/2`
@@ -171,9 +168,9 @@ defmodule Comb do
       [[1, 3, 2], [3, 1, 2], [2, 3, 1], [3, 2, 1]]
 
   """
-  @spec drop_permutations(Enum.t, integer) :: Enum.t
+  @spec drop_permutations(Enum.t(), integer) :: Enum.t()
   def drop_permutations(enum, n), do: permutations(enum) |> Stream.drop(n)
-  
+
   @doc """
   Returns the nth permutation that `permutations/1` would have returned. `n` is
   zero based.
@@ -184,9 +181,9 @@ defmodule Comb do
       [2, 1, 3]
 
   """
-  @spec nth_permutation(Enum.t, integer) :: list
+  @spec nth_permutation(Enum.t(), integer) :: list
   def nth_permutation(enum, n), do: permutations(enum) |> Enum.fetch!(n)
-  
+
   @doc """
   Returns the index in the result of what `permutations/1` would return, if
   `permutations/1` was called with `enum` sorted. `n` is zero based.
@@ -200,15 +197,15 @@ defmodule Comb do
       [1, 3, 2]
 
   """
-  @spec permutation_index(Enum.t) :: integer
+  @spec permutation_index(Enum.t()) :: integer
   def permutation_index(enum) do
-    list = Enum.to_list enum
+    list = Enum.to_list(enum)
+
     list
-    |> Enum.sort
+    |> Enum.sort()
     |> permutations
     |> Enum.find_index(fn p -> p == list end)
   end
-
 
   @doc """
   Returns a list containing all selections of the input `enum`. A selection
@@ -220,13 +217,14 @@ defmodule Comb do
       [[1, 1], [1, 2], [1, 3], [2, 1], [2, 2], [2, 3], [3, 1], [3, 2], [3, 3]]
 
   """
-  @spec selections(Enum.t, integer) :: Enum.t
+  @spec selections(Enum.t(), integer) :: Enum.t()
   def selections(_, 0), do: [[]]
 
   def selections(enum, n) do
-    list = Enum.to_list enum
+    list = Enum.to_list(enum)
+
     list
-    |> Enum.flat_map(fn el -> Enum.map(selections(list, n - 1), &([el | &1])) end)
+    |> Enum.flat_map(fn el -> Enum.map(selections(list, n - 1), &[el | &1]) end)
   end
 
   @doc """
@@ -242,11 +240,12 @@ defmodule Comb do
       [[], [1], [2], [1, 1], [1, 2], [1, 1, 2]]
 
   """
-  @spec subsets(Enum.t) :: Enum.t
+  @spec subsets(Enum.t()) :: Enum.t()
   def subsets(enum) do
-    n = Enum.count enum
+    n = Enum.count(enum)
+
     0..n
-    |> Stream.flat_map(&(do_subsets_for_n(enum, &1)))
+    |> Stream.flat_map(&do_subsets_for_n(enum, &1))
   end
 
   defp do_subsets_for_n(enum, n) do
@@ -263,6 +262,6 @@ defmodule Comb do
       8
 
   """
-  @spec count_subsets(Enum.t) :: integer
-  def count_subsets(enum), do: subsets(enum) |> Enum.count
+  @spec count_subsets(Enum.t()) :: integer
+  def count_subsets(enum), do: subsets(enum) |> Enum.count()
 end
