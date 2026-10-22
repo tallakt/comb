@@ -1,9 +1,9 @@
-defmodule Comb.Multiset do
+defmodule SComb.Multiset do
   @moduledoc false
 
   # A multiset is held as a list of `{value, count}` with the distinct values
   # in order of first appearance. Repeated elements are interchangeable, so
-  # the functions in `Comb` work on these rather than on the input list.
+  # the functions in `SComb` work on these rather than on the input list.
 
   @type t :: [{term, pos_integer}]
 

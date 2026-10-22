@@ -1,8 +1,8 @@
-# Comb
+# SComb
 
-[![CI](https://github.com/tallakt/comb/actions/workflows/ci.yml/badge.svg)](https://github.com/tallakt/comb/actions/workflows/ci.yml)
+[![CI](https://github.com/tallakt/scomb/actions/workflows/ci.yml/badge.svg)](https://github.com/tallakt/scomb/actions/workflows/ci.yml)
 
-The `Comb` package contains functions for combinatorics, such as
+SComb, for streaming combinatorics, contains functions such as
 `permutations/1` and `combinations/2`. Functions returning large lists will
 return these as a stream, while smaller values may be any enumerable.
 
@@ -15,12 +15,12 @@ need to be next to each other. This is best shown in the examples section.
 
 ## Installation
 
-Add `comb` to the dependencies in your `mix.exs`:
+Add `scomb` to the dependencies in your `mix.exs`:
 
 ```elixir
     def deps do
       [
-        {:comb, github: "tallakt/comb"}
+        {:scomb, "~> 0.1"}
       ]
     end
 ```
@@ -129,7 +129,7 @@ elements before it.
 
 ## Development
 
-Each function in `Comb` has a naive counterpart in `bench/naive.ex`, a short
+Each function in `SComb` has a naive counterpart in `bench/naive.ex`, a short
 and obviously correct implementation that serves as its specification. The tests
 check that both return the same elements, in the same order, for many inputs.
 If you find a faster algorithm, and tests are still passing, pull requests will
@@ -159,7 +159,7 @@ To measure a revised algorithm, we have supplied a mix task to measure the
 speedup compared to a naive (non streamed) version of the algorithm.
 
 ```
-    $ mix comb.benchmark
+    $ mix scomb.benchmark
 ```
 
 Each line gives the time taken as a percentage of the naive version, so

@@ -1,4 +1,4 @@
-defmodule Comb do
+defmodule SComb do
   # The README's examples run as doctests: drop the code fences around them,
   # and the CI badge
   @external_resource "README.md"
@@ -7,7 +7,7 @@ defmodule Comb do
              |> Enum.reject(&String.match?(&1, ~r/```|actions\/workflows/))
              |> Enum.join("\n")
 
-  alias Comb.{CartesianProduct, Combinations, Partitions, Permutations}
+  alias SComb.{CartesianProduct, Combinations, Partitions, Permutations}
 
   @doc """
   This function returns a list containing all combinations of one element

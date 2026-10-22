@@ -1,4 +1,4 @@
-defmodule Comb.Combinations do
+defmodule SComb.Combinations do
   @moduledoc false
 
   # Combinations of a multiset in lexicographic order, ranking the distinct
@@ -7,7 +7,7 @@ defmodule Comb.Combinations do
   # `{value, count, later}`, where `later` is the number of elements in the
   # entries that follow.
 
-  alias Comb.{Math, Multiset}
+  alias SComb.{Math, Multiset}
 
   # Subtrees with at most this many combinations are built as lists, as
   # streams cost more per element

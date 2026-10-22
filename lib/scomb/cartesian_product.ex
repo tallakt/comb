@@ -1,4 +1,4 @@
-defmodule Comb.CartesianProduct do
+defmodule SComb.CartesianProduct do
   @moduledoc false
 
   # Products with at most this many elements are built as lists, as streams

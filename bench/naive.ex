@@ -1,7 +1,7 @@
-defmodule Comb.Naive do
+defmodule SComb.Naive do
   @moduledoc false
 
-  # This module implements naive implementations of each function in `Comb`. They
+  # This module implements naive implementations of each function in `SComb`. They
   # serve as reference implementations for testing and benchmarking, returning
   # the same elements in the same order. These methods may return an `Enum`
   # instead of a `Stream`.

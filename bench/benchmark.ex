@@ -1,9 +1,9 @@
-defmodule Mix.Tasks.Comb.Benchmark do
+defmodule Mix.Tasks.Scomb.Benchmark do
   use Mix.Task
 
   def compare(description, function, args) do
     [t0, t] =
-      for module <- [Comb.Naive, Comb] do
+      for module <- [SComb.Naive, SComb] do
         # these functions return either an enum or integer
         run = fn ->
           case apply(module, function, args) do
@@ -30,7 +30,7 @@ defmodule Mix.Tasks.Comb.Benchmark do
   @repeated6 [1, 1, 1, 2, 2, 3]
   @repeated10 [1, 1, 1, 2, 2, 3, 5, 6, 7, 8]
 
-  @shortdoc "Compare speedup of Comb functions relative to naive impl"
+  @shortdoc "Compare speedup of SComb functions relative to naive impl"
   def run(_) do
     IO.puts("")
     IO.puts("[100% - like naive implementation, smaller is faster]")

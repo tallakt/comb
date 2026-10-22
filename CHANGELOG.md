@@ -8,11 +8,14 @@ Changes since 0.0.2:
 
 - `cartesian_product/1`, the cartesian product of any number of enumerables
 - `nth_subset/2`
-- `Comb.Math.binomial/2` and `Comb.Math.multinomial/1`
+- `SComb.Math.binomial/2` and `SComb.Math.multinomial/1`
 - Package metadata and documentation for publishing on Hex
 
 ### Changed
 
+- Renamed from Comb to SComb, for streaming combinatorics: the package is now
+  `scomb` and the modules `SComb` and `SComb.Math`, as the name `comb` is taken
+  on Hex
 - Every function now has a dedicated algorithm, instead of filtering the
   results of a naive one:
   - `permutations/1` uses a successor algorithm that handles repeated elements
@@ -34,11 +37,11 @@ Changes since 0.0.2:
   `[[1, 2], [1]]` where it returned `[[1], [1, 2]]`. The partitions of distinct
   elements are unchanged up to 3 elements
 - The `nth_*` functions accept a negative index, counting from the end
-- `Comb.Math.factorial/1` raises for negative numbers rather than never
+- `SComb.Math.factorial/1` raises for negative numbers rather than never
   returning
 
 ### Removed
 
 - `Comb.TablePermutations` and `Comb.ListAnalyzer`, which were internal
-- The naive reference implementations and the `comb.benchmark` task moved to
-  `bench/`, and are no longer part of the package
+- The naive reference implementations and the benchmark task, now
+  `scomb.benchmark`, moved to `bench/`, and are no longer part of the package

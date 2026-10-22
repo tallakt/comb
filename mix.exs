@@ -1,12 +1,12 @@
-defmodule Comb.MixProject do
+defmodule SComb.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/tallakt/comb"
+  @source_url "https://github.com/tallakt/scomb"
 
   def project do
     [
-      app: :comb,
+      app: :scomb,
       version: @version,
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -31,9 +31,9 @@ defmodule Comb.MixProject do
   end
 
   defp description do
-    "Combinatorics: permutations, combinations, subsets, selections, " <>
-      "partitions and cartesian products, generated lazily and handling " <>
-      "repeated elements"
+    "Streaming combinatorics: permutations, combinations, subsets, " <>
+      "selections, partitions and cartesian products, generated lazily and " <>
+      "handling repeated elements"
   end
 
   defp package do
@@ -45,7 +45,7 @@ defmodule Comb.MixProject do
 
   defp docs do
     [
-      main: "Comb",
+      main: "SComb",
       source_ref: "v#{@version}",
       extras: ["CHANGELOG.md"]
     ]

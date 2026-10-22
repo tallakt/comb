@@ -1,4 +1,4 @@
-defmodule Comb.Math do
+defmodule SComb.Math do
   @moduledoc """
   Some useful math functions. These are generally used internally by the
   library.

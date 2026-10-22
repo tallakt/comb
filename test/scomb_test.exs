@@ -1,8 +1,8 @@
-defmodule CombTest do
+defmodule SCombTest do
   use ExUnit.Case, async: true
-  import Comb
-  alias Comb.Naive
-  doctest Comb, import: true
+  import SComb
+  alias SComb.Naive
+  doctest SComb, import: true
 
   # Every list of up to five of a, b and c, covering repeated elements in any
   # order, and some longer and unsorted inputs
@@ -122,7 +122,7 @@ defmodule CombTest do
     assert drop_permutations(repeated, n) |> Enum.at(1) == nth_permutation(repeated, n + 1)
 
     count = count_combinations(1..100, 50)
-    assert count == Comb.Math.binomial(100, 50)
+    assert count == SComb.Math.binomial(100, 50)
     assert nth_combination(1..100, 50, count - 1) == Enum.to_list(51..100)
     assert nth_subset(1..100, -1) == Enum.to_list(1..100)
   end

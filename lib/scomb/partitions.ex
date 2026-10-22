@@ -1,4 +1,4 @@
-defmodule Comb.Partitions do
+defmodule SComb.Partitions do
   @moduledoc false
 
   # A partition is a list of blocks. With the distinct values ranked by first
@@ -11,7 +11,7 @@ defmodule Comb.Partitions do
   # The values left are held as entries `{rank, value, count}`, and a block's
   # counts as `{rank, count}` for the values it holds.
 
-  alias Comb.Multiset
+  alias SComb.Multiset
 
   # Partitions of at most this many elements are built as lists, as streams
   # cost more per element

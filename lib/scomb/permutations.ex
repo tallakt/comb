@@ -1,4 +1,4 @@
-defmodule Comb.Permutations do
+defmodule SComb.Permutations do
   @moduledoc false
 
   # Each distinct value gets a key, the value appearing last in the input
@@ -7,7 +7,7 @@ defmodule Comb.Permutations do
   # from the head of the list. A permutation is held as a list of keys and a
   # list of values, and consecutive permutations share their tails.
 
-  alias Comb.{Math, Multiset}
+  alias SComb.{Math, Multiset}
 
   # The first permutation has the repeated elements grouped, in order of first
   # appearance
