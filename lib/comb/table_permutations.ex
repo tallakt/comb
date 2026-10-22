@@ -30,9 +30,10 @@ defmodule Comb.TablePermutations do
     count = Enum.count(list)
     result = do_permutations(list, count, [])
     if list |> any_duplicates? do
-      result = result |> Stream.uniq
+      result |> Stream.uniq
+    else
+      result
     end
-    result
   end
 
   defp do_permutations([], _, _), do: [[]]
