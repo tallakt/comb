@@ -9,7 +9,21 @@ return these as a stream, while smaller values may be any enumerable.
 The package contains only Elixir code without any library dependencies.
 
 Where applicable, the library will return sensible results with repeated
-parameters. This is best shown in the examples section.
+parameters: equal elements are interchangeable, so each distinct permutation,
+combination, subset or partition is returned once. Repeated elements do not
+need to be next to each other. This is best shown in the examples section.
+
+## Installation
+
+Add `comb` to the dependencies in your `mix.exs`:
+
+```elixir
+    def deps do
+      [
+        {:comb, github: "tallakt/comb"}
+      ]
+    end
+```
 
 ## Examples
 
@@ -30,6 +44,9 @@ parameters. This is best shown in the examples section.
 
     iex> nth_permutation(1..3, 3)
     [3, 1, 2]
+
+    iex> count_permutations([1, 1, 2, 2])
+    6
 ```
 
 ### Combinations
@@ -53,6 +70,9 @@ parameters. This is best shown in the examples section.
 ```elixir
     iex> cartesian_product(1..2, 3..4)
     [[1, 3], [1, 4], [2, 3], [2, 4]]
+
+    iex> cartesian_product([1..2, [:a], 3..4]) |> Enum.to_list
+    [[1, :a, 3], [1, :a, 4], [2, :a, 3], [2, :a, 4]]
 ```
 
 ### Subsets
@@ -67,6 +87,8 @@ parameters. This is best shown in the examples section.
     iex> count_subsets(1..3)
     8
 
+    iex> nth_subset(1..3, 4)
+    [1, 2]
 ```
 
 ### Selections
@@ -84,15 +106,34 @@ parameters. This is best shown in the examples section.
     [[[1, 2, 3]], [[1, 2], [3]], [[1, 3], [2]], [[1], [2, 3]], [[1], [2], [3]]]
 
     iex> partitions([1, 1, 2]) |> Enum.to_list
-    [[[1, 1, 2]], [[1, 1], [2]], [[1], [1, 2]], [[1], [1], [2]]]
+    [[[1, 1, 2]], [[1, 1], [2]], [[1, 2], [1]], [[1], [1], [2]]]
+```
+
+### Large results
+
+Results are generated lazily, so you can take from results too large to hold
+in memory. The `count_*`, `nth_*` and `drop_permutations/2` functions, and
+`permutation_index/1`, compute their result directly, without generating the
+elements before it.
+
+```elixir
+    iex> combinations(1..1000, 500) |> Enum.take(1) |> hd |> Enum.take(3)
+    [1, 2, 3]
+
+    iex> count_permutations(1..30)
+    265252859812191058636308480000000
+
+    iex> nth_permutation(1..30, 10 ** 30) |> permutation_index
+    1000000000000000000000000000000
 ```
 
 ## Development
 
-As of now, some functions are optimized while others are not.  We are inviting
-anyone with spare time and an interest to try to optimize any of these
-functions. If there is some performance gain, and tests are still passing, pull
-requests will be considered on Github.
+Each function in `Comb` has a naive counterpart in `bench/naive.ex`, a short
+and obviously correct implementation that serves as its specification. The tests
+check that both return the same elements, in the same order, for many inputs.
+If you find a faster algorithm, and tests are still passing, pull requests will
+be considered on Github.
 
 As the package is gradually optimized, we will strive to keep the interface
 fixed. Even so, you should not depend on a certain function generating the
@@ -125,16 +166,19 @@ Each line gives the time taken as a percentage of the naive version, so
 smaller is faster:
 
 ```
-[100% - like naive implementation, smaller is faster]
+    [100% - like naive implementation, smaller is faster]
 
-  48.44%: combinations - 4-2 elements
-  56.60%: combinations - 6-2 elements
-   4.14%: combinations - 40-2 elements
-  50.00%: combinations - 6-2 with repeated elements
-  ...
-  24.67%: permutations - 7 element range
-  41.18%: permutations - 6 element with repetitions
-  ...
+      ...
+       2.05%: combinations - 40-2 elements
+       5.16%: combinations - 20-10 elements
+       4.77%: combinations - 10-5 with repeated elements
+      ...
+      18.85%: partitions - 9 element range
+       2.84%: partitions - 10 element with repetitions
+      ...
+      15.16%: permutations - 7 element range
+       8.22%: permutations - 10 element with repetitions
+      ...
 ```
 
 ## Credits

@@ -1,29 +1,30 @@
 defmodule Mix.Tasks.Comb.Benchmark do
   use Mix.Task
 
-  def compare(description, function, args, n \\ 5) do
-    # these functions return either an enum or integer
-
+  def compare(description, function, args) do
     [t0, t] =
       for module <- [Comb.Naive, Comb] do
-        {time, _} =
-          :timer.tc(fn ->
-            for _ <- 1..n do
-              case apply(module, function, args) do
-                n when is_integer(n) ->
-                  nil
+        # these functions return either an enum or integer
+        run = fn ->
+          case apply(module, function, args) do
+            n when is_integer(n) -> nil
+            enum -> Stream.run(enum)
+          end
+        end
 
-                enum ->
-                  Stream.run(enum)
-              end
-            end
-          end)
-
-        time
+        # warm up, which also loads the modules
+        run.()
+        time_per_run(run, 1)
       end
 
     percentage = :erlang.float_to_binary(100 * t / t0, decimals: 2) |> String.pad_leading(7)
     IO.puts("#{percentage}%: #{function} - #{description}")
+  end
+
+  # Doubles the number of runs until they take long enough to time reliably
+  defp time_per_run(run, n) do
+    {time, _} = :timer.tc(fn -> for _ <- 1..n, do: run.() end)
+    if time < 50_000, do: time_per_run(run, 2 * n), else: time / n
   end
 
   @repeated6 [1, 1, 1, 2, 2, 3]
@@ -38,11 +39,14 @@ defmodule Mix.Tasks.Comb.Benchmark do
     [
       {"2+2 element ranges", :cartesian_product, [1..2, 1..2]},
       {"5+5 element ranges", :cartesian_product, [1..5, 1..5]},
+      {"4x10 element ranges", :cartesian_product, [List.duplicate(1..10, 4)]},
       :space,
-      {"4-2 elements", :combinations, [1..6, 2]},
+      {"4-2 elements", :combinations, [1..4, 2]},
       {"6-2 elements", :combinations, [1..6, 2]},
       {"40-2 elements", :combinations, [1..40, 2]},
-      {"6-2 with repeated elements", :combinations, [[1, 1, 1, 2, 2, 3], 2]},
+      {"20-10 elements", :combinations, [1..20, 10]},
+      {"6-2 with repeated elements", :combinations, [@repeated6, 2]},
+      {"10-5 with repeated elements", :combinations, [@repeated10, 5]},
       :space,
       {"6-2 elements", :count_combinations, [1..6, 2]},
       {"6-2 with repeated elements", :count_combinations, [@repeated6, 2]},
@@ -51,16 +55,19 @@ defmodule Mix.Tasks.Comb.Benchmark do
       {"10-2 with repeated elements, n=10", :nth_combination, [@repeated10, 2, 10]},
       :space,
       {"4 element range", :partitions, [1..4]},
+      {"9 element range", :partitions, [1..9]},
       {"6 element with repetitions", :partitions, [@repeated6]},
+      {"10 element with repetitions", :partitions, [@repeated10]},
       :space,
       {"7 element range", :permutations, [1..7]},
       {"6 element with repetitions", :permutations, [@repeated6]},
+      {"10 element with repetitions", :permutations, [@repeated10]},
       :space,
       {"6 element range", :count_permutations, [1..6]},
       {"6 element with repetitions", :count_permutations, [@repeated6]},
       :space,
       {"6 element range, drop 100", :drop_permutations, [1..6, 100]},
-      {"6 element range with repetitions, drop 100", :drop_permutations, [@repeated6, 100]},
+      {"6 element range with repetitions, drop 20", :drop_permutations, [@repeated6, 20]},
       :space,
       {"6 element range, n=100", :nth_permutation, [1..6, 100]},
       {"6 element range with repetitions, n=20", :nth_permutation, [@repeated6, 20]},
@@ -69,10 +76,14 @@ defmodule Mix.Tasks.Comb.Benchmark do
       {"6 element range with repetition", :permutation_index, [[1, 2, 1, 6, 1, 5]]},
       :space,
       {"6-3 element range", :selections, [1..6, 3]},
+      {"8-5 element range", :selections, [1..8, 5]},
       :space,
       {"6 element range", :subsets, [1..6]},
+      {"14 element range", :subsets, [1..14]},
       :space,
       {"6 element range", :count_subsets, [1..6]},
+      :space,
+      {"10 element range, n=500", :nth_subset, [1..10, 500]},
       :end
     ]
     |> Enum.each(fn

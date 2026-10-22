@@ -65,7 +65,7 @@ defmodule Comb.NaiveTest do
 
   test "partitions repeated parameters" do
     assert partitions([1, 1, 2]) ==
-             [[[1, 1, 2]], [[1, 1], [2]], [[1], [1, 2]], [[1], [1], [2]]]
+             [[[1, 1, 2]], [[1, 1], [2]], [[1, 2], [1]], [[1], [1], [2]]]
   end
 
   test "permutation_index basic usage" do
