@@ -30,6 +30,12 @@
   list. They are still enumerable, but code that relies on the exact type of
   the result, for example `is_list/1`, will no longer work
 
+- `combinations/2`, `subsets/1`, `partitions/1` and
+  `combinations_with_replacement/2` generate their elements up to 2 times
+  faster, as an element no longer goes through a stream for each value placed,
+  and `nth_combination_with_replacement/3` no longer builds the repeated
+  elements
+
 ### Fixed
 
 - The `nth_*` functions raised a `KeyError` instead of

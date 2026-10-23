@@ -61,7 +61,7 @@ defmodule Mix.Tasks.Scomb.Benchmark do
       {"6-3 elements", :count_permuted_combinations, [1..6, 3]},
       {"6-3 with repeated elements", :count_permuted_combinations, [@repeated6, 3]},
       {"6-3, n=50", :nth_permuted_combination, [1..6, 3, 50]},
-      {"6-3 with repeated elements, n=20", :nth_permuted_combination, [@repeated6, 3, 20]},
+      {"6-3 with repeated elements, n=10", :nth_permuted_combination, [@repeated6, 3, 10]},
       :space,
       {"6-3 elements", :combinations_with_replacement, [1..6, 3]},
       {"6-3 elements", :count_combinations_with_replacement, [1..6, 3]},

@@ -32,60 +32,86 @@ defmodule SComb.Partitions do
     |> generate(:free, Multiset.size(multiset), {0, min, max})
   end
 
-  # The partitions of the entries with no block greater than bound
+  # The partitions of the entries with no block greater than bound. A large
+  # input is a stream of the chunks that follow from each way to place the
+  # first blocks, so an element goes through one stream rather than one for
+  # each decision made. A small input is a list.
   defp generate([], _bound, _size, {used, min, max}),
     do: if(used >= min and used <= max, do: [[]], else: [])
 
-  defp generate(entries, bound, size, {used, min, max} = limits) do
-    # The most elements the next block may hold while the rest, one to a
-    # block, can still reach the min number of blocks
-    slack = size + used + 1 - min
+  defp generate(entries, bound, size, limits) when size > @eager_size,
+    do: Stream.flat_map(leaves(entries, bound, size, limits, []), &chunk/1)
 
-    if used >= max or slack < 1 do
-      []
-    else
-      # The last block allowed has to take all that is left
-      all? = used + 1 == max
-      fill(entries, bound, 1, [], [], [], size, put_elem(limits, 0, used + 1), {slack, all?})
+  defp generate(entries, bound, size, {used, _min, _max} = limits) do
+    limits = put_elem(limits, 0, used + 1)
+
+    entries
+    |> blocks(bound, size, limits, false)
+    |> Enum.flat_map(fn {block, left, counts, size} ->
+      left |> generate(counts, size, limits) |> Enum.map(&[block | &1])
+    end)
+  end
+
+  # The inputs small enough to be built as lists, with the blocks placed
+  # before them, reversed, which are in front of every partition of them
+  defp leaves(entries, bound, size, limits, placed) when size <= @eager_size,
+    do: [{entries, bound, size, limits, placed}]
+
+  defp leaves(entries, bound, size, {used, _min, _max} = limits, placed) do
+    limits = put_elem(limits, 0, used + 1)
+
+    entries
+    |> blocks(bound, size, limits, true)
+    |> Stream.flat_map(fn {block, left, counts, size} ->
+      leaves(left, counts, size, limits, [block | placed])
+    end)
+  end
+
+  defp chunk({entries, bound, size, {used, min, max}, placed}) do
+    # The limits count the blocks placed, which were counted when placing them
+    partitions = generate(entries, bound, size, {used, min, max})
+
+    case Enum.reverse(placed) do
+      [] -> partitions
+      blocks -> Enum.map(partitions, &(blocks ++ &1))
     end
   end
 
-  # Decides how many copies of each entry go in the next block, largest first,
-  # then partitions what is left. The block and what is left are built
-  # reversed. bound holds the counts of the previous block not yet passed, or
-  # is :free once the block is smaller.
-  defp fill(
-         [{rank, value, count} | entries],
-         bound,
-         min,
-         values,
-         counts,
-         left,
-         size,
-         limits,
-         room
-       ) do
+  # The ways to place the next block, largest first, as the block, what is
+  # left, the counts of the block and the size of what is left. limits are
+  # those with the block placed.
+  defp blocks(entries, bound, size, {used, min, max}, lazy?) do
+    # The most elements the next block may hold while the rest, one to a
+    # block, can still reach the min number of blocks
+    slack = size + used - min
+
+    if used > max or slack < 1 do
+      []
+    else
+      # The last block allowed has to take all that is left
+      pick(entries, bound, 1, [], [], [], size, {slack, used == max}, lazy?)
+    end
+  end
+
+  # Decides how many copies of each entry go in the next block, largest first.
+  # The block and what is left are built reversed. bound holds the counts of
+  # the previous block not yet passed, or is :free once the block is smaller.
+  defp pick([{rank, value, count} | entries], bound, min, values, counts, left, size, room, lazy?) do
     {slack, all?} = room
 
     bound
     |> choices(rank, count, min)
     |> Enum.filter(fn {t, _bound} -> t <= slack and (not all? or t == count) end)
-    |> flat_map(size > @eager_size, fn {t, bound} ->
+    |> flat_map(lazy?, fn {t, bound} ->
       values = Multiset.dup(value, t, values)
       counts = if t > 0, do: [{rank, t} | counts], else: counts
       left = if t < count, do: [{rank, value, count - t} | left], else: left
-      fill(entries, bound, 0, values, counts, left, size - t, limits, {slack - t, all?})
+      pick(entries, bound, 0, values, counts, left, size - t, {slack - t, all?}, lazy?)
     end)
   end
 
-  defp fill([], _bound, _min, values, counts, left, size, limits, _room) do
-    block = Enum.reverse(values)
-
-    left
-    |> Enum.reverse()
-    |> generate(Enum.reverse(counts), size, limits)
-    |> map(size > @eager_size, &[block | &1])
-  end
+  defp pick([], _bound, _min, values, counts, left, size, _room, _lazy?),
+    do: [{Enum.reverse(values), Enum.reverse(left), Enum.reverse(counts), size}]
 
   # Counting and ranking. The first blocks a partition of the entries may have
   # are the same as the ones generate/4 tries, in the same order. The number of
@@ -271,7 +297,4 @@ defmodule SComb.Partitions do
 
   defp flat_map(enum, true, fun), do: Stream.flat_map(enum, fun)
   defp flat_map(enum, false, fun), do: Enum.flat_map(enum, fun)
-
-  defp map(enum, true, fun), do: Stream.map(enum, fun)
-  defp map(enum, false, fun), do: Enum.map(enum, fun)
 end

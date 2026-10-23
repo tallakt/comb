@@ -216,6 +216,9 @@ defmodule SCombTest do
     assert count_selections(1..10, 100) == 10 ** 100
     assert nth_selection(1..10, 100, 10 ** 99) == [2 | List.duplicate(1, 99)]
     assert count_combinations_with_replacement(1..100, 50) == SComb.Math.binomial(149, 50)
+    assert nth_combination_with_replacement(1..100, 50, 0) == List.duplicate(1, 50)
+    assert nth_combination_with_replacement(1..100, 50, -1) == List.duplicate(100, 50)
+    assert nth_combination_with_replacement(1..100, 50, 1) == List.duplicate(1, 49) ++ [2]
   end
 
   test "nth, drop and index work far into huge results" do

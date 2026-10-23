@@ -13,6 +13,10 @@ defmodule SComb.Combinations do
   # streams cost more per element
   @eager_limit 2000
 
+  # Counting the combinations exactly, to decide this, is done only when it
+  # takes no more than this many steps
+  @exact_limit 20_000
+
   def combinations(enum, k), do: enum |> Multiset.from_enum() |> entries() |> generate(k)
 
   def subsets(enum) do
@@ -21,36 +25,51 @@ defmodule SComb.Combinations do
     0..Multiset.size(multiset) |> Stream.flat_map(&generate(entries, &1))
   end
 
-  # A combination in which a value may be used any number of times starts with
-  # the first value, followed by one with k - 1 values, or has no copy of it
-  def with_replacement(enum, k), do: enum |> Enum.uniq() |> replacing(k)
+  # Combinations in which a value may be used any number of times are the
+  # combinations of the values each there k times
+  def with_replacement(enum, k) do
+    values = Enum.uniq(enum)
+    last = length(values) - 1
 
-  defp replacing(_values, 0), do: [[]]
-  defp replacing([], _k), do: []
-
-  defp replacing([value | rest] = values, k) do
-    if Math.binomial(length(values) + k - 1, k) <= @eager_limit do
-      for(tail <- replacing(values, k - 1), do: [value | tail]) ++ replacing(rest, k)
-    else
-      Stream.flat_map([:with, :without], fn
-        :with -> Stream.map(replacing(values, k - 1), &[value | &1])
-        :without -> replacing(rest, k)
-      end)
-    end
+    values
+    |> Enum.with_index(fn value, i -> {value, k, (last - i) * k} end)
+    |> generate(k)
   end
-
-  # Combinations in which a value may be used any number of times are also the
-  # combinations of the values each repeated k times, which is how nth finds
-  # them
 
   def count_with_replacement(enum, k) do
     distinct = enum |> Enum.uniq() |> length()
     if distinct + k == 0, do: 1, else: Math.binomial(distinct + k - 1, k)
   end
 
-  def nth_with_replacement(enum, k, n), do: enum |> repeat(k) |> nth(k, n)
+  def nth_with_replacement(enum, k, n) do
+    values = Enum.uniq(enum)
+    n = Multiset.index!(n, count_with_replacement(values, k))
+    nth_replacing(values, k, n)
+  end
 
-  defp repeat(enum, k), do: enum |> Enum.uniq() |> Enum.flat_map(&List.duplicate(&1, k))
+  defp nth_replacing(_values, 0, _n), do: []
+
+  # Takes t copies of the first value, the most first. Each choice of t has
+  # as many combinations as there are ways to fill the k - t places left with
+  # the d values after it, which is C(d + j - 1, j) for j places.
+  defp nth_replacing([value | rest], k, n) do
+    {t, n} = skip_replacing(length(rest), k, 0, 1, n)
+    Multiset.dup(value, t, nth_replacing(rest, k - t, n))
+  end
+
+  # Walks j, the number of places left to fill, from 0 up, so t = k - j goes
+  # down from k. ways is the number of combinations for j.
+  defp skip_replacing(d, k, j, ways, n) do
+    if n < ways or j == k do
+      {k - j, n}
+    else
+      skip_replacing(d, k, j + 1, next_ways(d, j, ways), n - ways)
+    end
+  end
+
+  # C(d + j, j + 1) from C(d + j - 1, j), and no ways to fill places without values
+  defp next_ways(0, _j, _ways), do: 0
+  defp next_ways(d, j, ways), do: div(ways * (d + j), j + 1)
 
   def count(enum, k), do: enum |> Multiset.from_enum() |> count_k(k)
 
@@ -99,34 +118,63 @@ defmodule SComb.Combinations do
 
     cond do
       k > size -> []
-      Math.binomial(size, k) <= @eager_limit -> eager(entries, k)
-      true -> lazy(entries, k)
+      few?(entries, k, size) -> eager(entries, k)
+      true -> Stream.flat_map(leaves(entries, k, []), &chunk/1)
     end
   end
 
-  defp eager(_entries, 0), do: [[]]
-
-  defp eager([{value, count, later} | rest], k) when count + later >= k do
-    with_value =
-      for t <- min(count, k)..max(1, k - later)//-1,
-          tail <- eager(rest, k - t),
-          do: Multiset.dup(value, t, tail)
-
-    with_value ++ eager(rest, k)
+  # Whether there are few enough combinations to build them as a list. The
+  # binomial is the number of combinations of distinct elements, and an upper
+  # bound otherwise, when the number is found exactly if that is cheap.
+  defp few?(entries, k, size) do
+    Math.binomial(size, k) <= @eager_limit or
+      (length(entries) * k <= @exact_limit and
+         entries |> Enum.map(&Tuple.delete_at(&1, 2)) |> count_k(k) <= @eager_limit)
   end
 
-  defp eager(_entries, _k), do: []
+  # The combinations are a list of chunks, each the combinations of what is
+  # left after the values picked, which are held reversed. An element goes
+  # through one stream rather than one for each value picked.
+  defp leaves(entries, k, picked) do
+    size = size(entries)
 
-  defp lazy(entries, k) do
-    entries
-    |> choices(k)
-    |> Stream.flat_map(fn {value, t, rest} ->
-      case generate(rest, k - t) do
-        tails when is_list(tails) -> Enum.map(tails, &Multiset.dup(value, t, &1))
-        tails -> Stream.map(tails, &Multiset.dup(value, t, &1))
-      end
+    cond do
+      k > size ->
+        []
+
+      few?(entries, k, size) ->
+        [{entries, k, picked}]
+
+      true ->
+        Stream.flat_map(choices(entries, k), fn {value, t, rest} ->
+          leaves(rest, k - t, Multiset.dup(value, t, picked))
+        end)
+    end
+  end
+
+  defp chunk({entries, k, picked}) do
+    case Enum.reverse(picked) do
+      [] -> eager(entries, k)
+      prefix -> Enum.map(eager(entries, k), &(prefix ++ &1))
+    end
+  end
+
+  defp eager(entries, k), do: eager(entries, k, [])
+
+  # The combinations of k elements, followed by the list acc. Those with the
+  # most copies of the first value come first. Building onto acc rather than
+  # joining lists saves copying each combination for each value.
+  defp eager(_entries, 0, acc), do: [[] | acc]
+
+  defp eager([{value, count, later} | rest], k, acc) when count + later >= k do
+    without = eager(rest, k, acc)
+
+    Enum.reduce(max(1, k - later)..min(count, k)//1, without, fn t, acc ->
+      :lists.foldr(&[Multiset.dup(value, t, &1) | &2], acc, eager(rest, k - t, []))
     end)
   end
+
+  defp eager(_entries, _k, acc), do: acc
 
   # The ways to pick the first value of a combination, and how many copies
   defp choices([{value, count, later} | rest], k) when count + later >= k do
