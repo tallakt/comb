@@ -1,6 +1,8 @@
 defmodule SComb.CartesianProduct do
   @moduledoc false
 
+  alias SComb.Multiset
+
   # Products with at most this many elements are built as lists, as streams
   # cost more per element
   @eager_limit 2000
@@ -15,6 +17,22 @@ defmodule SComb.CartesianProduct do
   end
 
   def selections(enum, k), do: product(List.duplicate(Enum.uniq(enum), k))
+
+  def count_selections(enum, k), do: length(Enum.uniq(enum)) ** k
+
+  # The index written in base d, one digit for each of the k positions
+  def nth_selection(enum, k, n) do
+    values = enum |> Enum.uniq() |> List.to_tuple()
+    d = tuple_size(values)
+
+    n
+    |> Multiset.index!(d ** k)
+    |> digits(d, k, [])
+    |> Enum.map(&elem(values, &1))
+  end
+
+  defp digits(_i, _d, 0, acc), do: acc
+  defp digits(i, d, k, acc), do: digits(div(i, d), d, k - 1, [rem(i, d) | acc])
 
   defp generate([], _sizes), do: [[]]
 

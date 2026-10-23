@@ -6,7 +6,8 @@ SComb is Streaming Combinatorics for Elixir. It contains functions such as
 `permutations/1` and `combinations/2`. Functions returning large results return
 a lazy [`Stream`](https://hexdocs.pm/elixir/Stream.html), so you can take from
 results too large to hold in memory, while smaller results may be any
-enumerable.
+enumerable. The lazy results are a `SComb.Sequence`, which also knows its size
+and can find the element at an index without generating the ones before it.
 
 The package contains only Elixir code without any library dependencies.
 
@@ -100,12 +101,31 @@ Add `scomb` to the dependencies in your `mix.exs`:
     [1, 2]
 ```
 
+### Combinations with replacement
+
+```elixir
+    iex> combinations_with_replacement(1..3, 2) |> Enum.to_list
+    [[1, 1], [1, 2], [1, 3], [2, 2], [2, 3], [3, 3]]
+
+    iex> count_combinations_with_replacement(1..3, 2)
+    6
+
+    iex> nth_combination_with_replacement(1..3, 2, 4)
+    [2, 3]
+```
+
 ### Selections
 
 ```elixir
     iex> selections(1..2, 3) |> Enum.to_list
     [[1, 1, 1], [1, 1, 2], [1, 2, 1], [1, 2, 2], [2, 1, 1], [2, 1, 2],
     [2, 2, 1], [2, 2, 2]]
+
+    iex> count_selections(1..2, 3)
+    8
+
+    iex> nth_selection(1..2, 3, 5)
+    [2, 1, 2]
 ```
 
 ### Partitions
@@ -119,6 +139,12 @@ Add `scomb` to the dependencies in your `mix.exs`:
 
     iex> partitions(1..3, min: 2, max: 2) |> Enum.to_list
     [[[1, 2], [3]], [[1, 3], [2]], [[1], [2, 3]]]
+
+    iex> count_partitions(1..3)
+    5
+
+    iex> nth_partition(1..3, 1)
+    [[1, 2], [3]]
 ```
 
 ### Large results
@@ -126,7 +152,11 @@ Add `scomb` to the dependencies in your `mix.exs`:
 Results are generated lazily, so you can take from results too large to hold
 in memory. The `count_*`, `nth_*` and `drop_permutations/2` functions, and
 `permutation_index/1`, compute their result directly, without generating the
-elements before it.
+elements before it. The results of `permutations/1`, `combinations/2`,
+`subsets/1`, `selections/2`, `partitions/1` and
+`combinations_with_replacement/2` are `SComb.Sequence` structs that use these
+functions, so the `Enum` functions that look at a position or the size do not
+generate the elements before it either.
 
 ```elixir
     iex> combinations(1..1000, 500) |> Enum.take(1) |> hd |> Enum.take(3)
@@ -137,6 +167,15 @@ elements before it.
 
     iex> nth_permutation(1..30, 10 ** 30) |> permutation_index
     1000000000000000000000000000000
+
+    iex> Enum.count(permutations(1..30))
+    265252859812191058636308480000000
+
+    iex> Enum.at(permutations(1..30), 10 ** 30) |> Enum.take(3)
+    [14, 28, 9]
+
+    iex> Enum.random(combinations(1..100, 50)) |> length
+    50
 ```
 
 ## Development

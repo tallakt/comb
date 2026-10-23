@@ -24,7 +24,31 @@ defmodule SComb.Naive do
     |> Enum.uniq()
   end
 
+  # A value is used any number of times by taking the first value, then the
+  # combinations that remain with it still available, or leaving it out
+  def combinations_with_replacement(enum, k),
+    do: enum |> Enum.uniq() |> do_combinations_with_replacement(k)
+
+  defp do_combinations_with_replacement(_, 0), do: [[]]
+
+  defp do_combinations_with_replacement([], _), do: []
+
+  defp do_combinations_with_replacement([h | t] = values, k) do
+    for(c <- do_combinations_with_replacement(values, k - 1), do: [h | c]) ++
+      do_combinations_with_replacement(t, k)
+  end
+
+  def count_combinations_with_replacement(enum, k),
+    do: combinations_with_replacement(enum, k) |> Enum.count()
+
+  def nth_combination_with_replacement(enum, k, n),
+    do: combinations_with_replacement(enum, k) |> Enum.fetch!(n)
+
   def count_combinations(enum, k), do: combinations(enum, k) |> Enum.count()
+
+  def count_partitions(enum), do: partitions(enum) |> Enum.count()
+
+  def count_selections(enum, k), do: selections(enum, k) |> Enum.count()
 
   def count_permutations(enum), do: permutations(enum) |> Enum.count()
 
@@ -33,6 +57,10 @@ defmodule SComb.Naive do
   def drop_permutations(enum, n), do: permutations(enum) |> Enum.drop(n)
 
   def nth_combination(enum, k, n), do: combinations(enum, k) |> Enum.fetch!(n)
+
+  def nth_partition(enum, n), do: partitions(enum) |> Enum.fetch!(n)
+
+  def nth_selection(enum, k, n), do: selections(enum, k) |> Enum.fetch!(n)
 
   def nth_permutation(enum, n), do: permutations(enum) |> Enum.fetch!(n)
 

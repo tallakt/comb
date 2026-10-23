@@ -35,4 +35,12 @@ defmodule SComb.Multiset do
   @spec dup(term, non_neg_integer, list) :: list
   def dup(_value, 0, list), do: list
   def dup(value, count, list), do: dup(value, count - 1, [value | list])
+
+  # Resolves an index, counting from the end if negative, of count elements
+  @spec index!(integer, non_neg_integer) :: non_neg_integer
+  def index!(n, count) do
+    i = if n < 0, do: count + n, else: n
+    if i < 0 or i >= count, do: raise(Enum.OutOfBoundsError, message: "index #{n} out of bounds")
+    i
+  end
 end

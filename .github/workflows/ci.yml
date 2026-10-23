@@ -41,3 +41,24 @@ jobs:
 
       - name: Run tests
         run: mix test
+
+      # The checks below do not depend on the Elixir version, so they run once
+      - name: Check the documentation builds without warnings
+        if: matrix.elixir == '1.19'
+        run: MIX_ENV=dev mix docs --warnings-as-errors
+
+      - name: Check the package builds
+        if: matrix.elixir == '1.19'
+        run: mix hex.build --unpack -o "$RUNNER_TEMP/scomb-package"
+
+      - name: Restore the Dialyzer PLTs
+        if: matrix.elixir == '1.19'
+        uses: actions/cache@v4
+        with:
+          path: priv/plts
+          key: plts-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+          restore-keys: plts-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-
+
+      - name: Run Dialyzer
+        if: matrix.elixir == '1.19'
+        run: mix dialyzer --format github

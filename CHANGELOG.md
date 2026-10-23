@@ -7,7 +7,26 @@
 - `permuted_combinations/2`, every permutation of every combination of `k`
   elements
 - `partitions/2` accepts `:min` and `:max` options limiting the number of
-  blocks, as in the Clojure `math.combinatorics` library
+  blocks, as in the Clojure `math.combinatorics` library. The limits are
+  applied while the partitions are generated, so `partitions(1..40, min: 39)`
+  does not go through every partition of 40 elements
+- `count_partitions/1` and `nth_partition/2`
+- `count_selections/2` and `nth_selection/3`
+- `combinations_with_replacement/2`, `count_combinations_with_replacement/2` and
+  `nth_combination_with_replacement/3`
+- `SComb.Sequence`, the type of what `permutations/1`, `combinations/2`,
+  `subsets/1`, `selections/2`, `partitions/1` and
+  `combinations_with_replacement/2` return. It is an `Enumerable` that knows
+  its size and finds an element by index, so `Enum.count/1`, `Enum.at/2`,
+  `Enum.slice/2`, `Enum.random/1` and similar do not generate the elements
+  before it. Inputs of more than 2000 elements, or 200 for partitions, are
+  streamed as before
+
+### Changed
+
+- The functions above return a `SComb.Sequence` rather than a `Stream` or a
+  list. They are still enumerable, but code that relies on the exact type of
+  the result, for example `is_list/1`, will no longer work
 
 ### Fixed
 

@@ -103,6 +103,15 @@ defmodule SComb.KnownValuesTest do
                [[[1, 1], [2]], [[1, 2], [1]]]
     end
 
+    test "limits are applied while generating, not by filtering all partitions" do
+      # Far too many partitions to filter: Bell(40) is about 1.6 * 10^35
+      assert Enum.count(partitions(1..40, min: 39)) == div(40 * 39, 2) + 1
+      assert Enum.count(partitions(1..40, min: 40)) == 1
+      assert Enum.count(partitions(1..60, max: 1)) == 1
+      # Stirling number of the second kind S(16, 2), plus one block
+      assert Enum.count(partitions(1..16, max: 2)) == 2 ** 15
+    end
+
     test "large inputs are still lazy" do
       assert partitions(1..100, min: 2) |> Enum.take(1) == [[Enum.to_list(1..99), [100]]]
     end

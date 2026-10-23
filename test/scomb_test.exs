@@ -73,6 +73,41 @@ defmodule SCombTest do
       end
     end
 
+    test "partitions, count and nth" do
+      for input <- inputs() do
+        expected = Naive.partitions(input)
+        assert count_partitions(input) == length(expected), inspect(input)
+
+        for {partition, n} <- Enum.with_index(expected) do
+          assert nth_partition(input, n) == partition, inspect({input, n})
+        end
+      end
+    end
+
+    test "selections, count and nth" do
+      for input <- inputs(), length(input) <= 4, k <- 0..3 do
+        expected = Naive.selections(input, k)
+        assert count_selections(input, k) == length(expected), inspect({input, k})
+
+        for {selection, n} <- Enum.with_index(expected) do
+          assert nth_selection(input, k, n) == selection, inspect({input, k, n})
+        end
+      end
+    end
+
+    test "combinations_with_replacement, count and nth" do
+      for input <- inputs(), length(input) <= 5, k <- 0..4 do
+        expected = Naive.combinations_with_replacement(input, k)
+        assert Enum.to_list(combinations_with_replacement(input, k)) == expected
+        assert count_combinations_with_replacement(input, k) == length(expected)
+
+        for {combination, n} <- Enum.with_index(expected) do
+          assert nth_combination_with_replacement(input, k, n) == combination,
+                 inspect({input, k, n})
+        end
+      end
+    end
+
     test "partitions with min and max blocks" do
       for input <- inputs(), opts <- [[min: 2], [max: 2], [min: 2, max: 3], [min: 4, max: 1]] do
         assert Enum.to_list(partitions(input, opts)) == Naive.partitions(input, opts),
@@ -102,6 +137,9 @@ defmodule SCombTest do
       repeated = [1, 1, 2, 2, 3, 3, 4, 4, 5, 6]
       assert Enum.to_list(partitions(repeated)) == Naive.partitions(repeated)
       assert Enum.to_list(selections(1..5, 6)) == Naive.selections(1..5, 6)
+
+      assert Enum.to_list(combinations_with_replacement(1..10, 6)) ==
+               Naive.combinations_with_replacement(1..10, 6)
     end
   end
 
@@ -121,6 +159,18 @@ defmodule SCombTest do
              [Enum.to_list(1..100)],
              [Enum.to_list(1..99), [100]]
            ]
+  end
+
+  test "counts and nth work far into huge results of the new functions" do
+    # The Bell number B(30)
+    assert count_partitions(1..30) == 846_749_014_511_809_332_450_147
+    assert nth_partition(1..30, -1) == Enum.map(1..30, &[&1])
+    assert nth_partition(1..30, 0) == [Enum.to_list(1..30)]
+    assert nth_partition(1..30, 1) == [Enum.to_list(1..29), [30]]
+    assert nth_selection(1..10, 100, -1) == List.duplicate(10, 100)
+    assert count_selections(1..10, 100) == 10 ** 100
+    assert nth_selection(1..10, 100, 10 ** 99) == [2 | List.duplicate(1, 99)]
+    assert count_combinations_with_replacement(1..100, 50) == SComb.Math.binomial(149, 50)
   end
 
   test "nth, drop and index work far into huge results" do
@@ -153,6 +203,15 @@ defmodule SCombTest do
     assert Enum.to_list(partitions([])) == [[]]
     assert Enum.to_list(selections([], 2)) == []
     assert Enum.to_list(selections(1..3, 0)) == [[]]
+    assert count_partitions([]) == 1
+    assert nth_partition([], 0) == []
+    assert count_selections([], 2) == 0
+    assert count_selections([], 0) == 1
+    assert nth_selection([], 0, 0) == []
+    assert Enum.to_list(combinations_with_replacement([], 0)) == [[]]
+    assert Enum.to_list(combinations_with_replacement([], 2)) == []
+    assert count_combinations_with_replacement([], 0) == 1
+    assert count_combinations_with_replacement([], 2) == 0
     assert Enum.to_list(cartesian_product([1..2, []])) == []
     assert Enum.to_list(drop_permutations(1..3, 6)) == []
   end
@@ -161,6 +220,9 @@ defmodule SCombTest do
     assert nth_permutation(1..3, -1) == [3, 2, 1]
     assert nth_combination(1..4, 2, -1) == [3, 4]
     assert nth_subset(1..3, -1) == [1, 2, 3]
+    assert nth_partition(1..3, -1) == [[1], [2], [3]]
+    assert nth_selection(1..3, 2, -1) == [3, 3]
+    assert nth_combination_with_replacement(1..3, 2, -1) == [3, 3]
     assert Enum.to_list(drop_permutations(1..3, -4)) == [[1, 2, 3], [2, 1, 3]]
   end
 
@@ -169,6 +231,11 @@ defmodule SCombTest do
     assert_raise Enum.OutOfBoundsError, fn -> nth_permutation(1..3, -7) end
     assert_raise Enum.OutOfBoundsError, fn -> nth_combination(1..3, 4, 0) end
     assert_raise Enum.OutOfBoundsError, fn -> nth_subset([], 1) end
+    assert_raise Enum.OutOfBoundsError, fn -> nth_partition(1..3, 5) end
+    assert_raise Enum.OutOfBoundsError, fn -> nth_partition([1, 1, 2], -5) end
+    assert_raise Enum.OutOfBoundsError, fn -> nth_selection(1..3, 2, 9) end
+    assert_raise Enum.OutOfBoundsError, fn -> nth_selection([], 2, 0) end
+    assert_raise Enum.OutOfBoundsError, fn -> nth_combination_with_replacement(1..3, 2, 6) end
   end
 
   test "negative sizes raise" do

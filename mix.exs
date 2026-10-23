@@ -15,7 +15,8 @@ defmodule SComb.MixProject do
       description: description(),
       package: package(),
       docs: docs(),
-      source_url: @source_url
+      source_url: @source_url,
+      dialyzer: [plt_local_path: "priv/plts", plt_core_path: "priv/plts", plt_add_apps: [:mix]]
     ]
   end
 
@@ -27,6 +28,7 @@ defmodule SComb.MixProject do
   defp deps do
     [
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:stream_data, "~> 1.0", only: :test}
     ]
   end
@@ -40,7 +42,8 @@ defmodule SComb.MixProject do
   defp package do
     [
       licenses: ["Apache-2.0"],
-      links: %{"GitHub" => @source_url}
+      links: %{"GitHub" => @source_url, "Changelog" => @source_url <> "/blob/master/CHANGELOG.md"},
+      files: ~w(lib mix.exs README.md CHANGELOG.md LICENSE .formatter.exs)
     ]
   end
 

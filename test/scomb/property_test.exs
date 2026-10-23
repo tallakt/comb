@@ -18,6 +18,9 @@ defmodule SComb.PropertyTest do
   # Naive has to generate everything, so the sizes it can handle are limited
   @runs 600
 
+  # For the properties that make a lot of calls for each input
+  @few_runs 100
+
   describe "same results as the naive implementation" do
     property "permutations" do
       check all(list <- lists(7), max_runs: @runs) do
@@ -64,7 +67,86 @@ defmodule SComb.PropertyTest do
     end
   end
 
+  describe "the count and nth functions agree with the naive implementation" do
+    property "partitions" do
+      check all(list <- lists(9), max_runs: @few_runs) do
+        expected = Naive.partitions(list)
+        assert count_partitions(list) == length(expected)
+
+        # Every nth partition is slow for the largest inputs, so look at some
+        step = max(1, div(length(expected), 40))
+
+        for {partition, n} <- Enum.with_index(expected), rem(n, step) == 0 do
+          assert nth_partition(list, n) == partition
+        end
+
+        assert nth_partition(list, -1) == List.last(expected)
+      end
+    end
+
+    property "selections" do
+      check all(list <- lists(4), k <- integer(0..3), max_runs: @runs) do
+        expected = Naive.selections(list, k)
+        assert count_selections(list, k) == length(expected)
+
+        for {selection, n} <- Enum.with_index(expected) do
+          assert nth_selection(list, k, n) == selection
+        end
+      end
+    end
+
+    property "combinations_with_replacement" do
+      check all(list <- lists(5), k <- integer(0..4), max_runs: @runs) do
+        expected = Naive.combinations_with_replacement(list, k)
+        assert Enum.to_list(combinations_with_replacement(list, k)) == expected
+        assert count_combinations_with_replacement(list, k) == length(expected)
+
+        for {combination, n} <- Enum.with_index(expected) do
+          assert nth_combination_with_replacement(list, k, n) == combination
+        end
+      end
+    end
+  end
+
   describe "properties of large results" do
+    property "nth_partition agrees with the start of the stream" do
+      check all(list <- lists(11), max_runs: @few_runs) do
+        for {partition, n} <- partitions(list) |> Enum.take(20) |> Enum.with_index() do
+          assert nth_partition(list, n) == partition
+        end
+
+        assert nth_partition(list, -1) == nth_partition(list, count_partitions(list) - 1)
+      end
+    end
+
+    property "indexing a sequence agrees with the nth functions" do
+      check all(
+              list <- ints(30),
+              k <- integer(0..30),
+              fraction <- float(min: 0.0, max: 0.999),
+              max_runs: @runs
+            ) do
+        at = fn sequence, count -> {Enum.count(sequence), trunc(count * fraction)} end
+
+        {count, i} = at.(permutations(list), count_permutations(list))
+        assert count == count_permutations(list)
+        assert Enum.at(permutations(list), i) == nth_permutation(list, i)
+
+        {_, i} = at.(combinations(list, k), count_combinations(list, k))
+
+        if count_combinations(list, k) > 0,
+          do: assert(Enum.at(combinations(list, k), i) == nth_combination(list, k, i))
+
+        {_, i} = at.(subsets(list), count_subsets(list))
+        assert Enum.at(subsets(list), i) == nth_subset(list, i)
+
+        {_, i} = at.(selections(list, k), count_selections(list, k))
+
+        if count_selections(list, k) > 0,
+          do: assert(Enum.at(selections(list, k), i) == nth_selection(list, k, i))
+      end
+    end
+
     property "nth_permutation and permutation_index are inverses" do
       check all(list <- ints(40), shuffled <- shuffle(list), max_runs: @runs) do
         n = permutation_index(shuffled)

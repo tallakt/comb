@@ -21,6 +21,37 @@ defmodule SComb.Combinations do
     0..Multiset.size(multiset) |> Stream.flat_map(&generate(entries, &1))
   end
 
+  # A combination in which a value may be used any number of times starts with
+  # the first value, followed by one with k - 1 values, or has no copy of it
+  def with_replacement(enum, k), do: enum |> Enum.uniq() |> replacing(k)
+
+  defp replacing(_values, 0), do: [[]]
+  defp replacing([], _k), do: []
+
+  defp replacing([value | rest] = values, k) do
+    if Math.binomial(length(values) + k - 1, k) <= @eager_limit do
+      for(tail <- replacing(values, k - 1), do: [value | tail]) ++ replacing(rest, k)
+    else
+      Stream.flat_map([:with, :without], fn
+        :with -> Stream.map(replacing(values, k - 1), &[value | &1])
+        :without -> replacing(rest, k)
+      end)
+    end
+  end
+
+  # Combinations in which a value may be used any number of times are also the
+  # combinations of the values each repeated k times, which is how nth finds
+  # them
+
+  def count_with_replacement(enum, k) do
+    distinct = enum |> Enum.uniq() |> length()
+    if distinct + k == 0, do: 1, else: Math.binomial(distinct + k - 1, k)
+  end
+
+  def nth_with_replacement(enum, k, n), do: enum |> repeat(k) |> nth(k, n)
+
+  defp repeat(enum, k), do: enum |> Enum.uniq() |> Enum.flat_map(&List.duplicate(&1, k))
+
   def count(enum, k), do: enum |> Multiset.from_enum() |> count_k(k)
 
   def count_subsets(enum) do
@@ -32,14 +63,14 @@ defmodule SComb.Combinations do
 
   def nth(enum, k, n) do
     multiset = Multiset.from_enum(enum)
-    nth_k(multiset, k, index!(n, count_k(multiset, k)))
+    nth_k(multiset, k, Multiset.index!(n, count_k(multiset, k)))
   end
 
   def nth_subset(enum, n) do
     multiset = Multiset.from_enum(enum)
     size = Multiset.size(multiset)
     counts = counts_by_size(multiset, size)
-    n = index!(n, Enum.sum(counts))
+    n = Multiset.index!(n, Enum.sum(counts))
 
     {k, n} =
       counts
@@ -182,11 +213,5 @@ defmodule SComb.Combinations do
       {t, n} -> Multiset.dup(value, t, nth_multiset(rest, k - t, n))
       n -> nth_multiset(rest, k, n)
     end
-  end
-
-  defp index!(n, count) do
-    i = if n < 0, do: count + n, else: n
-    if i < 0 or i >= count, do: raise(Enum.OutOfBoundsError, message: "index #{n} out of bounds")
-    i
   end
 end

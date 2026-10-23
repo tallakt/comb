@@ -6,3 +6,4 @@
 erl_crash.dump
 *.ez
 scomb-*.tar
+/priv/plts/
