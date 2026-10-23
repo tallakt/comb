@@ -3,8 +3,8 @@ defmodule SComb.PermutedCombinations do
 
   # Every combination, followed by every permutation of it. A combination
   # with counts t has k! / product of t! permutations, so a block of the
-  # combinations that start with t copies of a value has C(k, t) times the
-  # number of arrangements of k - t elements of the values after it. The
+  # combinations that have t copies of their last value has C(k, t) times the
+  # number of arrangements of k - t elements of the values before it. The
   # arrangements of j elements of a multiset are counted one value at a time:
   # j elements with i of them the new value can be placed in C(j, i) ways.
 
@@ -22,7 +22,7 @@ defmodule SComb.PermutedCombinations do
     total = multiset |> Multiset.counts() |> arrangements(k) |> Enum.at(k)
 
     {combination, offset} =
-      multiset |> with_arrangements_after(k) |> descend(k, Multiset.index!(n, total), 1)
+      multiset |> with_arrangements_before(k) |> descend(k, Multiset.index!(n, total), 1, [])
 
     Permutations.nth(combination, offset)
   end
@@ -40,34 +40,34 @@ defmodule SComb.PermutedCombinations do
     end
   end
 
-  # Pairs each entry with a tuple of the arrangements of the entries after it
-  defp with_arrangements_after(multiset, k) do
+  # Pairs each entry, from the last, with a tuple of the arrangements of the
+  # entries before it
+  defp with_arrangements_before(multiset, k) do
     {entries, _arrangements} =
-      List.foldr(multiset, {[], arrangements([], k)}, fn {value, count}, {entries, after_} ->
-        {[{value, count, List.to_tuple(after_)} | entries], multiply(after_, count)}
+      Enum.reduce(multiset, {[], arrangements([], k)}, fn {value, count}, {entries, before} ->
+        {[{value, count, List.to_tuple(before)} | entries], multiply(before, count)}
       end)
 
     entries
   end
 
-  # Finds the combination, and the index among its permutations. m is the
-  # number of permutations each of the combinations of the rest has by now.
-  defp descend(_entries, 0, n, _m), do: {[], n}
+  # Finds the combination, built from its last value, and the index among its
+  # permutations. m is the number of permutations each of the combinations of
+  # the rest has by now.
+  defp descend(_entries, 0, n, _m, acc), do: {acc, n}
 
-  defp descend([{value, count, after_} | rest], k, n, m),
-    do: take(min(count, k), value, rest, after_, k, n, m)
+  defp descend([{value, count, before} | rest], k, n, m, acc),
+    do: take(0, min(count, k), value, rest, before, k, n, m, acc)
 
-  defp take(0, _value, rest, _after, k, n, m), do: descend(rest, k, n, m)
-
-  defp take(t, value, rest, after_, k, n, m) do
+  # Takes t copies of the value, fewest first, as the combinations do
+  defp take(t, most, value, rest, before, k, n, m, acc) do
     m_t = m * Math.binomial(k, t)
-    block = m_t * elem(after_, k - t)
+    block = m_t * elem(before, k - t)
 
-    if n < block do
-      {combination, n} = descend(rest, k - t, n, m_t)
-      {Multiset.dup(value, t, combination), n}
+    if n < block or t == most do
+      descend(rest, k - t, n, m_t, Multiset.dup(value, t, acc))
     else
-      take(t - 1, value, rest, after_, k, n - block, m)
+      take(t + 1, most, value, rest, before, k, n - block, m, acc)
     end
   end
 end

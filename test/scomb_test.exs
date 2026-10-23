@@ -190,7 +190,7 @@ defmodule SCombTest do
 
     assert partitions(1..100) |> Enum.take(2) == [
              [Enum.to_list(1..100)],
-             [Enum.to_list(1..99), [100]]
+             [[1], Enum.to_list(2..100)]
            ]
   end
 
@@ -211,7 +211,7 @@ defmodule SCombTest do
     assert count_partitions(1..30) == 846_749_014_511_809_332_450_147
     assert nth_partition(1..30, -1) == Enum.map(1..30, &[&1])
     assert nth_partition(1..30, 0) == [Enum.to_list(1..30)]
-    assert nth_partition(1..30, 1) == [Enum.to_list(1..29), [30]]
+    assert nth_partition(1..30, 1) == [[1], Enum.to_list(2..30)]
     assert nth_selection(1..10, 100, -1) == List.duplicate(10, 100)
     assert count_selections(1..10, 100) == 10 ** 100
     assert nth_selection(1..10, 100, 10 ** 99) == [2 | List.duplicate(1, 99)]

@@ -1,17 +1,21 @@
 defmodule SComb.Partitions do
   @moduledoc false
 
-  # A partition is a list of blocks. With the distinct values ranked by first
-  # appearance, each block is described by how many of each value it holds.
-  # Keeping the blocks in non-increasing lexicographic order of these counts
-  # gives every partition of a multiset exactly one form, so no duplicates are
-  # generated. The first block always holds the first value left, and the
-  # blocks are generated largest first.
+  # A partition is a list of blocks. With the distinct values ranked from the
+  # last to appear first, each block is described by how many of each value
+  # it holds. Keeping the blocks in non-increasing lexicographic order of these
+  # counts gives every partition of a multiset exactly one form, so no
+  # duplicates are generated. The first block placed holds the last value
+  # left, and the blocks are placed largest first. A partition lists its
+  # blocks in the reverse of the order they are placed in, so the block with
+  # the last value comes last, and a block lists its elements in order of
+  # first appearance. Consecutive partitions then differ in the blocks placed
+  # last, at the front of the list, and are built onto shared tails.
   #
   # The values left are held as entries `{rank, value, count}`, and a block's
   # counts as `{rank, count}` for the values it holds.
 
-  alias SComb.{Math, Multiset}
+  alias SComb.Multiset
 
   # Partitions of at most this many elements are built as lists, as streams
   # cost more per element
@@ -26,55 +30,53 @@ defmodule SComb.Partitions do
   # The max may be :infinity, as every number is smaller than an atom.
   def partitions(enum, min \\ 0, max \\ :infinity) do
     multiset = Multiset.from_enum(enum)
-
-    multiset
-    |> Enum.with_index(fn {value, count}, rank -> {rank, value, count} end)
-    |> generate(:free, Multiset.size(multiset), {0, min, max})
+    multiset |> entries() |> generate(:free, Multiset.size(multiset), {0, min, max}, [])
   end
 
-  # The partitions of the entries with no block greater than bound. A large
-  # input is a stream of the chunks that follow from each way to place the
-  # first blocks, so an element goes through one stream rather than one for
-  # each decision made. A small input is a list.
-  defp generate([], _bound, _size, {used, min, max}),
-    do: if(used >= min and used <= max, do: [[]], else: [])
+  # The partitions of the entries with no block greater than bound, each
+  # followed by the blocks in tail. A large input is a stream of the chunks
+  # that follow from each way to place the first blocks, so an element goes
+  # through one stream rather than one for each block placed. A small input
+  # is a list.
+  defp generate(entries, bound, size, limits, tail) when size > @eager_size,
+    do: Stream.flat_map(leaves(entries, bound, size, limits, tail), &chunk/1)
 
-  defp generate(entries, bound, size, limits) when size > @eager_size,
-    do: Stream.flat_map(leaves(entries, bound, size, limits, []), &chunk/1)
-
-  defp generate(entries, bound, size, {used, _min, _max} = limits) do
-    limits = put_elem(limits, 0, used + 1)
-
-    entries
-    |> blocks(bound, size, limits, false)
-    |> Enum.flat_map(fn {block, left, counts, size} ->
-      left |> generate(counts, size, limits) |> Enum.map(&[block | &1])
-    end)
-  end
+  defp generate(entries, bound, size, limits, tail),
+    do: eager(entries, bound, size, limits, tail, [])
 
   # The inputs small enough to be built as lists, with the blocks placed
-  # before them, reversed, which are in front of every partition of them
-  defp leaves(entries, bound, size, limits, placed) when size <= @eager_size,
-    do: [{entries, bound, size, limits, placed}]
+  # before them, which follow every partition of them
+  defp leaves(entries, bound, size, limits, tail) when size <= @eager_size,
+    do: [{entries, bound, size, limits, tail}]
 
-  defp leaves(entries, bound, size, {used, _min, _max} = limits, placed) do
+  defp leaves(entries, bound, size, {used, _min, _max} = limits, tail) do
     limits = put_elem(limits, 0, used + 1)
 
     entries
     |> blocks(bound, size, limits, true)
     |> Stream.flat_map(fn {block, left, counts, size} ->
-      leaves(left, counts, size, limits, [block | placed])
+      leaves(left, counts, size, limits, [block | tail])
     end)
   end
 
-  defp chunk({entries, bound, size, {used, min, max}, placed}) do
-    # The limits count the blocks placed, which were counted when placing them
-    partitions = generate(entries, bound, size, {used, min, max})
+  defp chunk({entries, bound, size, limits, tail}),
+    do: eager(entries, bound, size, limits, tail, [])
 
-    case Enum.reverse(placed) do
-      [] -> partitions
-      blocks -> Enum.map(partitions, &(blocks ++ &1))
-    end
+  # The partitions, each followed by tail, and then the list acc. The ways to
+  # place the next block are tried from the last, as what they give is put in
+  # front of acc.
+  defp eager([], _bound, _size, {used, min, max}, tail, acc),
+    do: if(used >= min and used <= max, do: [tail | acc], else: acc)
+
+  defp eager(entries, bound, size, {used, _min, _max} = limits, tail, acc) do
+    limits = put_elem(limits, 0, used + 1)
+
+    entries
+    |> blocks(bound, size, limits, false)
+    |> Enum.reverse()
+    |> Enum.reduce(acc, fn {block, left, counts, size}, acc ->
+      eager(left, counts, size, limits, [block | tail], acc)
+    end)
   end
 
   # The ways to place the next block, largest first, as the block, what is
@@ -94,7 +96,8 @@ defmodule SComb.Partitions do
   end
 
   # Decides how many copies of each entry go in the next block, largest first.
-  # The block and what is left are built reversed. bound holds the counts of
+  # The block, built from the last value, is in order of first appearance, and
+  # what is left is built reversed. bound holds the counts of
   # the previous block not yet passed, or is :free once the block is smaller.
   defp pick([{rank, value, count} | entries], bound, min, values, counts, left, size, room, lazy?) do
     {slack, all?} = room
@@ -111,10 +114,10 @@ defmodule SComb.Partitions do
   end
 
   defp pick([], _bound, _min, values, counts, left, size, _room, _lazy?),
-    do: [{Enum.reverse(values), Enum.reverse(left), Enum.reverse(counts), size}]
+    do: [{values, Enum.reverse(left), Enum.reverse(counts), size}]
 
   # Counting and ranking. The first blocks a partition of the entries may have
-  # are the same as the ones generate/4 tries, in the same order. The number of
+  # are the same as the ones generate/5 tries, in the same order. The number of
   # partitions after a first block depends only on what is left and the block,
   # so it is looked up in a memo when seen before.
 
@@ -126,7 +129,8 @@ defmodule SComb.Partitions do
     multiset = Multiset.from_enum(enum)
 
     if Multiset.distinct?(multiset) do
-      {:distinct, Enum.map(multiset, &elem(&1, 0)), multiset |> length() |> bells()}
+      values = multiset |> Enum.reverse() |> Enum.map(&elem(&1, 0))
+      {:distinct, values, multiset |> length() |> bells()}
     else
       entries = entries(multiset)
       {count, memo} = count_blocks(entries, :free, %{})
@@ -151,13 +155,13 @@ defmodule SComb.Partitions do
   def nth(enum, n), do: enum |> plan() |> nth_plan(n)
 
   def nth_plan({:distinct, values, bells}, n),
-    do: nth_distinct(values, Multiset.index!(n, last(bells)), bells)
+    do: nth_distinct(values, Multiset.index!(n, last(bells)), bells, [])
 
-  def nth_plan({:memo, entries, count, memo}, n) do
-    unrank(entries, :free, Multiset.index!(n, count), memo)
-  end
+  def nth_plan({:memo, entries, count, memo}, n),
+    do: unrank(entries, :free, Multiset.index!(n, count), memo, [])
 
-  defp entries(multiset), do: Enum.with_index(multiset, fn {v, c}, rank -> {rank, v, c} end)
+  defp entries(multiset),
+    do: multiset |> Enum.reverse() |> Enum.with_index(fn {v, c}, rank -> {rank, v, c} end)
 
   # The memo holds for each state the number of partitions, and the number
   # after each of its first blocks. The states are found by their shape, so
@@ -184,13 +188,14 @@ defmodule SComb.Partitions do
     end
   end
 
-  defp unrank([], _bound, _n, _memo), do: []
+  # The blocks found first go last
+  defp unrank([], _bound, _n, _memo, acc), do: acc
 
-  defp unrank(entries, bound, n, memo) do
+  defp unrank(entries, bound, n, memo, acc) do
     key = memo_key(entries, bound)
     %{^key => {_count, counts}} = memo
     {block, left, bound, n} = find_block(first_blocks(entries, bound), counts, n)
-    [block | unrank(left, bound, n, memo)]
+    unrank(left, bound, n, memo, [block | acc])
   end
 
   defp find_block([{block, left, bound} | blocks], [count | counts], n) do
@@ -232,35 +237,41 @@ defmodule SComb.Partitions do
   end
 
   defp first_blocks([], _bound, _min, values, counts, left),
-    do: [{Enum.reverse(values), Enum.reverse(left), Enum.reverse(counts)}]
+    do: [{values, Enum.reverse(left), Enum.reverse(counts)}]
 
-  # With distinct elements the first block holds the first element and any of
-  # the others, those with the first element's block holding most first. The
-  # blocks of what is left then follow, and are in the same order whatever the
-  # first block. The number of partitions of m elements is the Bell number.
-  defp nth_distinct([], _n, _bells), do: []
+  # With distinct elements the first block placed holds the last element and
+  # any of the others, those with the last element's block holding most
+  # first. The blocks of what is left then follow, and are in the same order
+  # whatever the first block. The number of partitions of m elements is the
+  # Bell number. The values are from the last, and the blocks found first go
+  # last.
+  defp nth_distinct([], _n, _bells, acc), do: acc
 
-  defp nth_distinct([first | rest], n, bells) do
-    {others, left, n} = choose(rest, length(rest), 0, [], [], n, bells)
-    [[first | others] | nth_distinct(left, n, bells)]
+  defp nth_distinct([first | rest], n, bells, acc) do
+    {block, left, n} = choose(rest, length(rest), 0, [first], [], n, bells)
+    nth_distinct(left, n, bells, [block | acc])
   end
 
   # Decides for each of the other elements, in order, whether it is in the
-  # first block, having picked c so far. Including it goes first.
-  defp choose([], _total, _c, picked, left, n, _bells),
-    do: {Enum.reverse(picked), Enum.reverse(left), n}
+  # block, having picked c so far. Including it goes first. The block is built
+  # by putting each element in front, which leaves it in order of first
+  # appearance.
+  defp choose([], _total, _c, block, left, n, _bells), do: {block, Enum.reverse(left), n}
 
-  defp choose([element | rest], total, c, picked, left, n, bells) do
+  defp choose([element | rest], total, c, block, left, n, bells) do
     later = length(rest)
 
     # The partitions with this element in the block, over each number x of the
-    # later elements that are in it as well
-    with_element =
-      Enum.sum(for x <- 0..later, do: Math.binomial(later, x) * elem(bells, total - c - 1 - x))
+    # later elements that are in it as well, with C(later, x) found from the
+    # one before
+    {with_element, _binomial} =
+      Enum.reduce(0..later, {0, 1}, fn x, {sum, binomial} ->
+        {sum + binomial * elem(bells, total - c - 1 - x), div(binomial * (later - x), x + 1)}
+      end)
 
     if n < with_element,
-      do: choose(rest, total, c + 1, [element | picked], left, n, bells),
-      else: choose(rest, total, c, picked, [element | left], n - with_element, bells)
+      do: choose(rest, total, c + 1, [element | block], left, n, bells),
+      else: choose(rest, total, c, block, [element | left], n - with_element, bells)
   end
 
   defp last(tuple), do: elem(tuple, tuple_size(tuple) - 1)

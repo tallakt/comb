@@ -1,6 +1,9 @@
 # SComb
 
 [![CI](https://github.com/tallakt/scomb/actions/workflows/ci.yml/badge.svg)](https://github.com/tallakt/scomb/actions/workflows/ci.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/scomb.svg)](https://hex.pm/packages/scomb)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-blue.svg)](https://hexdocs.pm/scomb)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/tallakt/scomb/blob/master/LICENSE)
 
 SComb is Streaming Combinatorics for Elixir. It contains functions such as
 `permutations/1` and `combinations/2`. Functions returning large results return
@@ -23,7 +26,7 @@ Add `scomb` to the dependencies in your `mix.exs`:
 ```elixir
     def deps do
       [
-        {:scomb, "~> 0.2"}
+        {:scomb, "~> 0.3"}
       ]
     end
 ```
@@ -117,7 +120,7 @@ Add `scomb` to the dependencies in your `mix.exs`:
 
 ```elixir
     iex> combinations_with_replacement(1..3, 2) |> Enum.to_list
-    [[1, 1], [1, 2], [1, 3], [2, 2], [2, 3], [3, 3]]
+    [[1, 1], [1, 2], [2, 2], [1, 3], [2, 3], [3, 3]]
 
     iex> count_combinations_with_replacement(1..3, 2)
     6
@@ -144,19 +147,19 @@ Add `scomb` to the dependencies in your `mix.exs`:
 
 ```elixir
     iex> partitions(1..3) |> Enum.to_list
-    [[[1, 2, 3]], [[1, 2], [3]], [[1, 3], [2]], [[1], [2, 3]], [[1], [2], [3]]]
+    [[[1, 2, 3]], [[1], [2, 3]], [[2], [1, 3]], [[1, 2], [3]], [[1], [2], [3]]]
 
     iex> partitions([1, 1, 2]) |> Enum.to_list
-    [[[1, 1, 2]], [[1, 1], [2]], [[1, 2], [1]], [[1], [1], [2]]]
+    [[[1, 1, 2]], [[1], [1, 2]], [[1, 1], [2]], [[1], [1], [2]]]
 
     iex> partitions(1..3, min: 2, max: 2) |> Enum.to_list
-    [[[1, 2], [3]], [[1, 3], [2]], [[1], [2, 3]]]
+    [[[1], [2, 3]], [[2], [1, 3]], [[1, 2], [3]]]
 
     iex> count_partitions(1..3)
     5
 
     iex> nth_partition(1..3, 1)
-    [[1, 2], [3]]
+    [[1], [2, 3]]
 ```
 
 ### Large results

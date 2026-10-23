@@ -1,15 +1,9 @@
 # Changelog
 
-## 0.2.0
+## 0.3.0
 
 ### Added
 
-- `permuted_combinations/2`, every permutation of every combination of `k`
-  elements
-- `partitions/2` accepts `:min` and `:max` options limiting the number of
-  blocks, as in the Clojure `math.combinatorics` library. The limits are
-  applied while the partitions are generated, so `partitions(1..40, min: 39)`
-  does not go through every partition of 40 elements
 - `count_partitions/1` and `nth_partition/2`
 - `count_selections/2` and `nth_selection/3`
 - `count_permuted_combinations/2` and `nth_permuted_combination/3`
@@ -18,23 +12,41 @@
   `nth_combination_with_replacement/3`
 - `SComb.Sequence`, the type of what `permutations/1`, `combinations/2`,
   `subsets/1`, `selections/2`, `partitions/1`, `combinations_with_replacement/2`,
-  `permuted_combinations/2` and `cartesian_product/1` return. It is an `Enumerable` that knows
-  its size and finds an element by index, so `Enum.count/1`, `Enum.at/2`,
-  `Enum.slice/2`, `Enum.random/1` and similar do not generate the elements
-  before it. Inputs of more than 2000 elements, or 200 for partitions, are
-  streamed as before
+  `permuted_combinations/2` and `cartesian_product/1` return. It is an
+  `Enumerable` that knows its size and finds an element by index, so
+  `Enum.count/1`, `Enum.at/2`, `Enum.slice/2`, `Enum.random/1` and similar do
+  not generate the elements before it. Inputs of more than 2000 elements, or
+  200 for partitions, are streamed as before
 
 ### Changed
 
 - The functions above return a `SComb.Sequence` rather than a `Stream` or a
   list. They are still enumerable, but code that relies on the exact type of
   the result, for example `is_list/1`, will no longer work
+- `combinations/2` returns the combinations in colexicographic order, by the
+  last value they hold, so `combinations(1..4, 2)` returns
+  `[[1, 2], [1, 3], [2, 3], [1, 4], [2, 4], [3, 4]]`. Consecutive combinations
+  then share the end of their lists, which makes generating them about four
+  times faster. `subsets/1` returns the subsets of each size in this order,
+  and `combinations_with_replacement/2` and `permuted_combinations/2` follow
+  it, as do the `nth_*` functions of all of these
+- `partitions/1` returns the partitions in a different order, and the blocks
+  of a partition are ordered by the last element they hold:
+  `nth_partition(1..3, 2)` is `[[2], [1, 3]]` where it was `[[1, 3], [2]]`.
+  Consecutive partitions then share the end of their lists, which makes
+  generating them somewhat faster
+- The `:min` and `:max` limits of `partitions/2` are applied while the
+  partitions are generated, so `partitions(1..40, min: 39)` does not go
+  through every partition of 40 elements
 
-- `combinations/2`, `subsets/1`, `partitions/1` and
-  `combinations_with_replacement/2` generate their elements up to 2 times
-  faster, as an element no longer goes through a stream for each value placed,
-  and `nth_combination_with_replacement/3` no longer builds the repeated
+## 0.2.0
+
+### Added
+
+- `permuted_combinations/2`, every permutation of every combination of `k`
   elements
+- `partitions/2` accepts `:min` and `:max` options limiting the number of
+  blocks, as in the Clojure `math.combinatorics` library
 
 ### Fixed
 

@@ -10,6 +10,11 @@ defmodule SComb.NaiveTest do
     assert combinations(1..3, 2) == [[1, 2], [1, 3], [2, 3]]
   end
 
+  test "combinations in colexicographic order" do
+    assert combinations(1..4, 2) == [[1, 2], [1, 3], [2, 3], [1, 4], [2, 4], [3, 4]]
+    assert combinations([1, 2, 1, 3], 2) == [[1, 1], [1, 2], [1, 3], [2, 3]]
+  end
+
   test "combinations repeated parameters" do
     assert combinations([1, 1, 1, 2, 2], 3) == [[1, 1, 1], [1, 1, 2], [1, 2, 2]]
   end
@@ -60,12 +65,12 @@ defmodule SComb.NaiveTest do
 
   test "partitions basic usage" do
     assert partitions(1..3) ==
-             [[[1, 2, 3]], [[1, 2], [3]], [[1, 3], [2]], [[1], [2, 3]], [[1], [2], [3]]]
+             [[[1, 2, 3]], [[1], [2, 3]], [[2], [1, 3]], [[1, 2], [3]], [[1], [2], [3]]]
   end
 
   test "partitions repeated parameters" do
     assert partitions([1, 1, 2]) ==
-             [[[1, 1, 2]], [[1, 1], [2]], [[1, 2], [1]], [[1], [1], [2]]]
+             [[[1, 1, 2]], [[1], [1, 2]], [[1, 1], [2]], [[1], [1], [2]]]
   end
 
   test "permutation_index basic usage" do
@@ -92,6 +97,11 @@ defmodule SComb.NaiveTest do
   test "subsets basic usage" do
     assert subsets(1..3) ==
              [[], [1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]
+  end
+
+  test "combinations_with_replacement in colexicographic order" do
+    assert combinations_with_replacement(1..3, 2) ==
+             [[1, 1], [1, 2], [2, 2], [1, 3], [2, 3], [3, 3]]
   end
 
   test "subsets repeated parameters" do

@@ -3,18 +3,22 @@ defmodule SComb.KnownValuesTest do
   import SComb
 
   # Hand-written expected results that any combinatorics implementation would
-  # give. SComb does not promise the order of permutations, so those are
-  # compared sorted.
+  # give. SComb does not promise the order of its results, so they are
+  # compared sorted where the order is not a standard one, and partitions with
+  # their blocks sorted too.
+
+  defp sorted(enum), do: enum |> Enum.to_list() |> Enum.sort()
+  defp sorted_partitions(enum), do: enum |> Enum.map(&Enum.sort/1) |> Enum.sort()
 
   test "combinations" do
-    assert Enum.to_list(combinations([1, 2, 3], 2)) == [[1, 2], [1, 3], [2, 3]]
-    assert Enum.to_list(combinations([1, 1, 2], 2)) == [[1, 1], [1, 2]]
+    assert sorted(combinations([1, 2, 3], 2)) == [[1, 2], [1, 3], [2, 3]]
+    assert sorted(combinations([1, 1, 2], 2)) == [[1, 1], [1, 2]]
     assert count_combinations(1..5, 3) == 10
   end
 
   test "subsets" do
-    assert Enum.to_list(subsets([1, 2, 3])) ==
-             [[], [1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]
+    assert sorted(subsets([1, 2, 3])) ==
+             Enum.sort([[], [1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]])
 
     assert count_subsets([1, 2, 3]) == 8
     assert count_subsets([1, 1, 2]) == 6
@@ -99,8 +103,8 @@ defmodule SComb.KnownValuesTest do
     end
 
     test "repeated elements" do
-      assert Enum.to_list(partitions([1, 1, 2], min: 2, max: 2)) ==
-               [[[1, 1], [2]], [[1, 2], [1]]]
+      assert sorted_partitions(partitions([1, 1, 2], min: 2, max: 2)) ==
+               sorted_partitions([[[1, 1], [2]], [[1, 2], [1]]])
     end
 
     test "limits are applied while generating, not by filtering all partitions" do
@@ -113,7 +117,9 @@ defmodule SComb.KnownValuesTest do
     end
 
     test "large inputs are still lazy" do
-      assert partitions(1..100, min: 2) |> Enum.take(1) == [[Enum.to_list(1..99), [100]]]
+      [partition] = partitions(1..100, min: 2) |> Enum.take(1)
+      assert length(partition) >= 2
+      assert partition |> Enum.concat() |> Enum.sort() == Enum.to_list(1..100)
     end
   end
 end

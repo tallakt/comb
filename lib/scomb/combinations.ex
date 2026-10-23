@@ -1,11 +1,14 @@
 defmodule SComb.Combinations do
   @moduledoc false
 
-  # Combinations of a multiset in lexicographic order, ranking the distinct
-  # values by first appearance. More copies of a value come first, as in
-  # [1, 1] before [1, 2]. The multiset is walked as a list of entries
-  # `{value, count, later}`, where `later` is the number of elements in the
-  # entries that follow.
+  # Combinations of a multiset in colexicographic order, ranking the distinct
+  # values by first appearance: by how many copies of the last value they
+  # hold, fewest first, then of the value before it, and so on, as in [1, 2],
+  # [1, 3], [2, 3], [1, 4]. Consecutive combinations then differ in their first
+  # elements, so they are built onto shared tails, most of them with a single
+  # new list cell. The multiset is walked from its last value, as a list of
+  # entries `{value, count, before}`, where `before` is the number of elements
+  # in the entries before it.
 
   alias SComb.{Math, Multiset}
 
@@ -27,14 +30,8 @@ defmodule SComb.Combinations do
 
   # Combinations in which a value may be used any number of times are the
   # combinations of the values each there k times
-  def with_replacement(enum, k) do
-    values = Enum.uniq(enum)
-    last = length(values) - 1
-
-    values
-    |> Enum.with_index(fn value, i -> {value, k, (last - i) * k} end)
-    |> generate(k)
-  end
+  def with_replacement(enum, k),
+    do: enum |> Enum.uniq() |> Enum.map(&{&1, k}) |> entries() |> generate(k)
 
   def count_with_replacement(enum, k) do
     distinct = enum |> Enum.uniq() |> length()
@@ -44,32 +41,30 @@ defmodule SComb.Combinations do
   def nth_with_replacement(enum, k, n) do
     values = Enum.uniq(enum)
     n = Multiset.index!(n, count_with_replacement(values, k))
-    nth_replacing(values, k, n)
+    values |> Enum.reverse() |> nth_replacing(length(values) - 1, k, n, [])
   end
 
-  defp nth_replacing(_values, 0, _n), do: []
+  # Takes t copies of the last value, fewest first. Each choice of t has as
+  # many combinations as there are ways to fill the j = k - t places left with
+  # the d values before it, which is C(d + j - 1, j).
+  defp nth_replacing(_values, _d, 0, _n, acc), do: acc
+  defp nth_replacing([value | _], 0, k, _n, acc), do: Multiset.dup(value, k, acc)
 
-  # Takes t copies of the first value, the most first. Each choice of t has
-  # as many combinations as there are ways to fill the k - t places left with
-  # the d values after it, which is C(d + j - 1, j) for j places.
-  defp nth_replacing([value | rest], k, n) do
-    {t, n} = skip_replacing(length(rest), k, 0, 1, n)
-    Multiset.dup(value, t, nth_replacing(rest, k - t, n))
+  defp nth_replacing([value | rest], d, k, n, acc) do
+    {t, n} = skip_replacing(d, k, 0, Math.binomial(d + k - 1, k), n)
+    nth_replacing(rest, d - 1, k - t, n, Multiset.dup(value, t, acc))
   end
 
-  # Walks j, the number of places left to fill, from 0 up, so t = k - j goes
-  # down from k. ways is the number of combinations for j.
-  defp skip_replacing(d, k, j, ways, n) do
-    if n < ways or j == k do
-      {k - j, n}
+  # ways is the number of combinations with t copies. With one more copy
+  # there is one place less to fill, C(d + j - 2, j - 1) ways.
+  defp skip_replacing(d, k, t, ways, n) do
+    if n < ways do
+      {t, n}
     else
-      skip_replacing(d, k, j + 1, next_ways(d, j, ways), n - ways)
+      j = k - t
+      skip_replacing(d, k, t + 1, div(ways * j, d + j - 1), n - ways)
     end
   end
-
-  # C(d + j, j + 1) from C(d + j - 1, j), and no ways to fill places without values
-  defp next_ways(0, _j, _ways), do: 0
-  defp next_ways(d, j, ways), do: div(ways * (d + j), j + 1)
 
   def count(enum, k), do: enum |> Multiset.from_enum() |> count_k(k)
 
@@ -103,14 +98,14 @@ defmodule SComb.Combinations do
 
   defp entries(multiset) do
     {entries, _size} =
-      List.foldr(multiset, {[], 0}, fn {value, count}, {entries, later} ->
-        {[{value, count, later} | entries], later + count}
+      Enum.reduce(multiset, {[], 0}, fn {value, count}, {entries, before} ->
+        {[{value, count, before} | entries], before + count}
       end)
 
     entries
   end
 
-  defp size([{_value, count, later} | _]), do: count + later
+  defp size([{_value, count, before} | _]), do: count + before
   defp size([]), do: 0
 
   defp generate(entries, k) do
@@ -118,7 +113,7 @@ defmodule SComb.Combinations do
 
     cond do
       k > size -> []
-      few?(entries, k, size) -> eager(entries, k)
+      few?(entries, k, size) -> eager(entries, k, [], [])
       true -> Stream.flat_map(leaves(entries, k, []), &chunk/1)
     end
   end
@@ -132,10 +127,10 @@ defmodule SComb.Combinations do
          entries |> Enum.map(&Tuple.delete_at(&1, 2)) |> count_k(k) <= @eager_limit)
   end
 
-  # The combinations are a list of chunks, each the combinations of what is
-  # left after the values picked, which are held reversed. An element goes
-  # through one stream rather than one for each value picked.
-  defp leaves(entries, k, picked) do
+  # The combinations are a stream of chunks, each the combinations of the
+  # entries left built onto the tail of the values picked after them. An
+  # element goes through one stream rather than one for each value picked.
+  defp leaves(entries, k, tail) do
     size = size(entries)
 
     cond do
@@ -143,45 +138,46 @@ defmodule SComb.Combinations do
         []
 
       few?(entries, k, size) ->
-        [{entries, k, picked}]
+        [{entries, k, tail}]
 
       true ->
         Stream.flat_map(choices(entries, k), fn {value, t, rest} ->
-          leaves(rest, k - t, Multiset.dup(value, t, picked))
+          leaves(rest, k - t, Multiset.dup(value, t, tail))
         end)
     end
   end
 
-  defp chunk({entries, k, picked}) do
-    case Enum.reverse(picked) do
-      [] -> eager(entries, k)
-      prefix -> Enum.map(eager(entries, k), &(prefix ++ &1))
-    end
+  defp chunk({entries, k, tail}), do: eager(entries, k, tail, [])
+
+  # The combinations of k elements of the entries, each followed by tail, and
+  # then the list acc. The ones with the fewest copies of the last value come
+  # first, so they are built last.
+  defp eager(_entries, 0, tail, acc), do: [tail | acc]
+
+  defp eager([{value, count, before} | rest], k, tail, acc) when count + before >= k,
+    do: copies(value, min(count, k), max(0, k - before), rest, k, tail, acc)
+
+  defp eager(_entries, _k, _tail, acc), do: acc
+
+  # The combinations with t copies of the value, for t down to least
+  defp copies(value, t, least, rest, k, tail, acc) when t >= least do
+    acc = eager(rest, k - t, Multiset.dup(value, t, tail), acc)
+    copies(value, t - 1, least, rest, k, tail, acc)
   end
 
-  defp eager(entries, k), do: eager(entries, k, [])
+  defp copies(_value, _t, _least, _rest, _k, _tail, acc), do: acc
 
-  # The combinations of k elements, followed by the list acc. Those with the
-  # most copies of the first value come first. Building onto acc rather than
-  # joining lists saves copying each combination for each value.
-  defp eager(_entries, 0, acc), do: [[] | acc]
+  # The ways to pick the last value of a combination, and how many copies, in
+  # the order of the combinations: an earlier last value first, then fewer
+  # copies first
+  defp choices(entries, k), do: choices(entries, k, [])
 
-  defp eager([{value, count, later} | rest], k, acc) when count + later >= k do
-    without = eager(rest, k, acc)
-
-    Enum.reduce(max(1, k - later)..min(count, k)//1, without, fn t, acc ->
-      :lists.foldr(&[Multiset.dup(value, t, &1) | &2], acc, eager(rest, k - t, []))
-    end)
+  defp choices([{value, count, before} | rest], k, acc) when count + before >= k do
+    picks = for t <- max(1, k - before)..min(count, k)//1, do: {value, t, rest}
+    choices(rest, k, picks ++ acc)
   end
 
-  defp eager(_entries, _k, acc), do: acc
-
-  # The ways to pick the first value of a combination, and how many copies
-  defp choices([{value, count, later} | rest], k) when count + later >= k do
-    for(t <- min(count, k)..max(1, k - later)//-1, do: {value, t, rest}) ++ choices(rest, k)
-  end
-
-  defp choices(_entries, _k), do: []
+  defp choices(_entries, _k, acc), do: acc
 
   defp count_k(multiset, k) do
     if Multiset.distinct?(multiset) do
@@ -216,50 +212,60 @@ defmodule SComb.Combinations do
     poly
   end
 
+  defp nth_k(_multiset, 0, _n), do: []
+
   defp nth_k(multiset, k, n) do
     if Multiset.distinct?(multiset) do
-      values = Enum.map(multiset, &elem(&1, 0))
-      size = length(values)
-      nth_distinct(values, size, k, n, Math.binomial(size, k))
+      values = multiset |> Enum.map(&elem(&1, 0)) |> Enum.reverse()
+      c = length(values) - 1
+      nth_distinct(values, c, k, n, Math.binomial(c, k), [])
     else
-      multiset |> with_counts_after(k) |> nth_multiset(k, n)
+      multiset |> with_counts_before(k) |> nth_multiset(k, n, [])
     end
   end
 
-  # total is the number of combinations of k elements among the size left
-  defp nth_distinct(_values, _size, 0, _n, _total), do: []
+  # The combinatorial number system: in colexicographic order, the index of a
+  # combination of distinct elements is the sum of C(c, i) over its elements,
+  # where c is the position of its i-th smallest element. The largest element
+  # is then at the last position c with C(c, k) no greater than the index.
+  # values are walked from position c down, and b is C(c, k).
+  defp nth_distinct(_values, _c, 0, _n, _b, acc), do: acc
 
-  defp nth_distinct([value | values], size, k, n, total) do
-    with_value = div(total * k, size)
-
-    if n < with_value,
-      do: [value | nth_distinct(values, size - 1, k - 1, n, with_value)],
-      else: nth_distinct(values, size - 1, k, n - with_value, total - with_value)
+  defp nth_distinct([value | values], c, k, n, b, acc) do
+    if b <= n do
+      # C(c - 1, k - 1) is C(c, k) * k / c
+      nth_distinct(values, c - 1, k - 1, n - b, div(b * k, max(c, 1)), [value | acc])
+    else
+      # C(c - 1, k) is C(c, k) * (c - k) / c
+      nth_distinct(values, c - 1, k, n, div(b * (c - k), c), acc)
+    end
   end
 
-  # Pairs each entry with a tuple of the number of combinations of each size
-  # in the entries that follow it
-  defp with_counts_after(multiset, k) do
+  # Pairs each entry, from the last, with a tuple of the number of
+  # combinations of each size in the entries before it
+  defp with_counts_before(multiset, k) do
     {entries, _poly} =
-      List.foldr(multiset, {[], polynomial([], k)}, fn {value, count}, {entries, poly} ->
+      Enum.reduce(multiset, {[], polynomial([], k)}, fn {value, count}, {entries, poly} ->
         {[{value, count, List.to_tuple(poly)} | entries], multiply(poly, count)}
       end)
 
     entries
   end
 
-  defp nth_multiset(_entries, 0, _n), do: []
+  defp nth_multiset(_entries, 0, _n, acc), do: acc
 
-  defp nth_multiset([{value, count, counts_after} | rest], k, n) do
-    taken =
-      Enum.reduce_while(min(count, k)..1//-1, n, fn t, n ->
-        block = elem(counts_after, k - t)
-        if n < block, do: {:halt, {t, n}}, else: {:cont, n - block}
-      end)
+  defp nth_multiset([{value, count, counts_before} | rest], k, n, acc) do
+    {t, n} = skip_copies(counts_before, k, 0, min(count, k), n)
+    nth_multiset(rest, k - t, n, Multiset.dup(value, t, acc))
+  end
 
-    case taken do
-      {t, n} -> Multiset.dup(value, t, nth_multiset(rest, k - t, n))
-      n -> nth_multiset(rest, k, n)
-    end
+  # Takes t copies of the value, fewest first, each choice followed by the
+  # combinations of k - t elements of the entries before it
+  defp skip_copies(counts_before, k, t, most, n) do
+    block = elem(counts_before, k - t)
+
+    if n < block or t == most,
+      do: {t, n},
+      else: skip_copies(counts_before, k, t + 1, most, n - block)
   end
 end

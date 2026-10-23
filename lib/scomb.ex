@@ -1,10 +1,10 @@
 defmodule SComb do
   # The README's examples run as doctests: drop the code fences around them,
-  # and the CI badge
+  # and the badges
   @external_resource "README.md"
   @moduledoc File.read!("README.md")
              |> String.split("\n")
-             |> Enum.reject(&String.match?(&1, ~r/```|actions\/workflows/))
+             |> Enum.reject(&String.match?(&1, ~r/```|^\[!\[/))
              |> Enum.join("\n")
 
   alias SComb.{
@@ -127,7 +127,7 @@ defmodule SComb do
   ## Examples
 
       iex> combinations_with_replacement([1, 2, 3], 2) |> Enum.to_list
-      [[1, 1], [1, 2], [1, 3], [2, 2], [2, 3], [3, 3]]
+      [[1, 1], [1, 2], [2, 2], [1, 3], [2, 3], [3, 3]]
 
       iex> combinations_with_replacement([1, 1, 2], 2) |> Enum.to_list
       [[1, 1], [1, 2], [2, 2]]
@@ -213,16 +213,20 @@ defmodule SComb do
   Partitions `enum` into any groups in sum containing all elements, as a lazy
   `SComb.Sequence`. With the `:min` or `:max` option the result is a stream.
 
+  Each block holds its elements in the order they appear in `enum`, and the
+  blocks are ordered by the last element they hold, so the block with the
+  last element of `enum` comes last.
+
   ## Examples
 
       iex> partitions(1..2) |> Enum.to_list
       [[[1, 2]], [[1], [2]]]
 
       iex> partitions([1, 1, 2]) |> Enum.to_list
-      [[[1, 1, 2]], [[1, 1], [2]], [[1, 2], [1]], [[1], [1], [2]]]
+      [[[1, 1, 2]], [[1], [1, 2]], [[1, 1], [2]], [[1], [1], [2]]]
 
       iex> partitions(1..3, min: 2, max: 2) |> Enum.to_list
-      [[[1, 2], [3]], [[1, 3], [2]], [[1], [2, 3]]]
+      [[[1], [2, 3]], [[2], [1, 3]], [[1, 2], [3]]]
 
   ## Options
 
@@ -293,7 +297,7 @@ defmodule SComb do
   ## Examples
 
       iex> nth_partition(1..3, 1)
-      [[1, 2], [3]]
+      [[1], [2, 3]]
 
       iex> nth_partition([1, 1, 2], -1)
       [[1], [1], [2]]

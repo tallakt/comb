@@ -13,7 +13,10 @@ defmodule SComb.Naive do
   def cartesian_product([enum | enums]),
     do: for(x <- enum, tail <- cartesian_product(enums), do: [x | tail])
 
-  def combinations(enum, k), do: enum |> group() |> do_combinations(k)
+  def combinations(enum, k) do
+    list = group(enum)
+    list |> do_combinations(k) |> colex(Enum.uniq(list))
+  end
 
   defp do_combinations(_, 0), do: [[]]
 
@@ -26,8 +29,10 @@ defmodule SComb.Naive do
 
   # A value is used any number of times by taking the first value, then the
   # combinations that remain with it still available, or leaving it out
-  def combinations_with_replacement(enum, k),
-    do: enum |> Enum.uniq() |> do_combinations_with_replacement(k)
+  def combinations_with_replacement(enum, k) do
+    values = Enum.uniq(enum)
+    values |> do_combinations_with_replacement(k) |> colex(values)
+  end
 
   defp do_combinations_with_replacement(_, 0), do: [[]]
 
@@ -36,6 +41,16 @@ defmodule SComb.Naive do
   defp do_combinations_with_replacement([h | t] = values, k) do
     for(c <- do_combinations_with_replacement(values, k - 1), do: [h | c]) ++
       do_combinations_with_replacement(t, k)
+  end
+
+  # Sorts combinations by how many copies of each value they hold, the last
+  # value first, fewer before more
+  defp colex(combinations, values) do
+    values = Enum.reverse(values)
+
+    Enum.sort_by(combinations, fn c ->
+      Enum.map(values, fn v -> Enum.count(c, &(&1 === v)) end)
+    end)
   end
 
   def count_combinations_with_replacement(enum, k),
@@ -74,10 +89,11 @@ defmodule SComb.Naive do
 
   def nth_subset(enum, n), do: subsets(enum) |> Enum.fetch!(n)
 
-  # The first block holds the first element, and any of the others, trying
-  # those holding the most first. The blocks of each partition are sorted, more
-  # of a value before less, and the first value before the next. Partitions
-  # that are generated again are dropped.
+  # The last block holds the last element, and any of the others, trying
+  # those holding the most first, taking the elements from the last. The
+  # blocks of each partition are sorted by how many of each value they hold,
+  # the last value first, less of a value before more. Partitions that are
+  # generated again are dropped.
   def partitions(enum, opts \\ []) do
     min = Keyword.get(opts, :min, 0)
     max = Keyword.get(opts, :max, :infinity)
@@ -87,12 +103,15 @@ defmodule SComb.Naive do
 
   defp all_partitions(enum) do
     list = group(enum)
-    values = Enum.uniq(list)
+    values = list |> Enum.uniq() |> Enum.reverse()
     counts = fn block -> Enum.map(values, fn v -> Enum.count(block, &(&1 === v)) end) end
 
     list
+    |> Enum.reverse()
     |> do_partitions()
-    |> Enum.map(&Enum.sort_by(&1, counts, :desc))
+    |> Enum.map(fn partition ->
+      partition |> Enum.map(&Enum.reverse/1) |> Enum.sort_by(counts)
+    end)
     |> Enum.uniq()
   end
 

@@ -104,7 +104,7 @@ defmodule SComb.SequenceTest do
 
     assert partitions(1..300) |> Enum.take(2) == [
              [Enum.to_list(1..300)],
-             [Enum.to_list(1..299), [300]]
+             [[1], Enum.to_list(2..300)]
            ]
 
     assert Enum.count(subsets(1..3000)) == 2 ** 3000
