@@ -42,7 +42,14 @@ defmodule SComb.Naive do
   # those holding the most first. The blocks of each partition are sorted, more
   # of a value before less, and the first value before the next. Partitions
   # that are generated again are dropped.
-  def partitions(enum) do
+  def partitions(enum, opts \\ []) do
+    min = Keyword.get(opts, :min, 0)
+    max = Keyword.get(opts, :max, :infinity)
+
+    enum |> all_partitions() |> Enum.filter(&(length(&1) >= min and length(&1) <= max))
+  end
+
+  defp all_partitions(enum) do
     list = group(enum)
     values = Enum.uniq(list)
     counts = fn block -> Enum.map(values, fn v -> Enum.count(block, &(&1 === v)) end) end
@@ -65,6 +72,9 @@ defmodule SComb.Naive do
     subsets = subsets_most_first(t)
     for(s <- subsets, do: [h | s]) ++ subsets
   end
+
+  def permuted_combinations(enum, k),
+    do: for(c <- combinations(enum, k), p <- permutations(c), do: p)
 
   def permutation_index(enum) do
     list = Enum.to_list(enum)

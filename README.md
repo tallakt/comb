@@ -2,9 +2,11 @@
 
 [![CI](https://github.com/tallakt/scomb/actions/workflows/ci.yml/badge.svg)](https://github.com/tallakt/scomb/actions/workflows/ci.yml)
 
-SComb, for streaming combinatorics, contains functions such as
-`permutations/1` and `combinations/2`. Functions returning large lists will
-return these as a stream, while smaller values may be any enumerable.
+SComb is Streaming Combinatorics for Elixir. It contains functions such as
+`permutations/1` and `combinations/2`. Functions returning large results return
+a lazy [`Stream`](https://hexdocs.pm/elixir/Stream.html), so you can take from
+results too large to hold in memory, while smaller results may be any
+enumerable.
 
 The package contains only Elixir code without any library dependencies.
 
@@ -20,7 +22,7 @@ Add `scomb` to the dependencies in your `mix.exs`:
 ```elixir
     def deps do
       [
-        {:scomb, "~> 0.1"}
+        {:scomb, "~> 0.2"}
       ]
     end
 ```
@@ -47,6 +49,13 @@ Add `scomb` to the dependencies in your `mix.exs`:
 
     iex> count_permutations([1, 1, 2, 2])
     6
+```
+
+### Permuted combinations
+
+```elixir
+    iex> permuted_combinations(1..3, 2) |> Enum.to_list
+    [[1, 2], [2, 1], [1, 3], [3, 1], [2, 3], [3, 2]]
 ```
 
 ### Combinations
@@ -107,6 +116,9 @@ Add `scomb` to the dependencies in your `mix.exs`:
 
     iex> partitions([1, 1, 2]) |> Enum.to_list
     [[[1, 1, 2]], [[1, 1], [2]], [[1, 2], [1]], [[1], [1], [2]]]
+
+    iex> partitions(1..3, min: 2, max: 2) |> Enum.to_list
+    [[[1, 2], [3]], [[1, 3], [2]], [[1], [2, 3]]]
 ```
 
 ### Large results

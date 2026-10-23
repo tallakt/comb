@@ -99,9 +99,48 @@ defmodule SComb do
       iex> partitions([1, 1, 2]) |> Enum.to_list
       [[[1, 1, 2]], [[1, 1], [2]], [[1, 2], [1]], [[1], [1], [2]]]
 
+      iex> partitions(1..3, min: 2, max: 2) |> Enum.to_list
+      [[[1, 2], [3]], [[1, 3], [2]], [[1], [2, 3]]]
+
+  ## Options
+
+    * `:min` - only return partitions with at least this many blocks
+    * `:max` - only return partitions with at most this many blocks
+
   """
-  @spec partitions(Enum.t()) :: Enum.t()
-  def partitions(enum), do: Partitions.partitions(enum)
+  @spec partitions(Enum.t(), keyword) :: Enum.t()
+  def partitions(enum, opts \\ []) do
+    min = Keyword.get(opts, :min)
+    max = Keyword.get(opts, :max)
+    partitions = Partitions.partitions(enum)
+
+    if min || max do
+      Stream.filter(partitions, fn p ->
+        n = length(p)
+        (is_nil(min) or n >= min) and (is_nil(max) or n <= max)
+      end)
+    else
+      partitions
+    end
+  end
+
+  @doc """
+  Returns a stream of every permutation of every combination of `k` elements
+  of `enum`: all the ways of picking `k` elements in a particular order.
+  Repeated elements are handled sensibly.
+
+  ## Examples
+
+      iex> permuted_combinations(1..3, 2) |> Enum.to_list
+      [[1, 2], [2, 1], [1, 3], [3, 1], [2, 3], [3, 2]]
+
+      iex> permuted_combinations([1, 1, 2], 2) |> Enum.to_list
+      [[1, 1], [1, 2], [2, 1]]
+
+  """
+  @spec permuted_combinations(Enum.t(), non_neg_integer) :: Enum.t()
+  def permuted_combinations(enum, k) when is_integer(k) and k >= 0,
+    do: enum |> combinations(k) |> Stream.flat_map(&permutations/1)
 
   @doc """
   Returns a stream containing all permutations of the input `enum`. A

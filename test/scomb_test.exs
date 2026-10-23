@@ -73,6 +73,21 @@ defmodule SCombTest do
       end
     end
 
+    test "partitions with min and max blocks" do
+      for input <- inputs(), opts <- [[min: 2], [max: 2], [min: 2, max: 3], [min: 4, max: 1]] do
+        assert Enum.to_list(partitions(input, opts)) == Naive.partitions(input, opts),
+               inspect({input, opts})
+      end
+    end
+
+    test "permuted_combinations" do
+      for input <- inputs(), k <- 0..(length(input) + 1) do
+        assert Enum.to_list(permuted_combinations(input, k)) ==
+                 Naive.permuted_combinations(input, k),
+               inspect({input, k})
+      end
+    end
+
     test "cartesian_product" do
       for enums <- [[], [1..3], [1..2, [], 1..2], [1..2, [:a, :a], 3..5], List.duplicate(1..3, 4)] do
         assert Enum.to_list(cartesian_product(enums)) == Naive.cartesian_product(enums)

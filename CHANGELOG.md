@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0
+
+### Added
+
+- `permuted_combinations/2`, every permutation of every combination of `k`
+  elements
+- `partitions/2` accepts `:min` and `:max` options limiting the number of
+  blocks, as in the Clojure `math.combinatorics` library
+
+### Fixed
+
+- The `nth_*` functions raised a `KeyError` instead of
+  `Enum.OutOfBoundsError` for an index out of bounds
+
 ## 0.1.0
 
 Changes since 0.0.2:
