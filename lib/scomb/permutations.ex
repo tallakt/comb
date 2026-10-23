@@ -42,7 +42,7 @@ defmodule SComb.Permutations do
     total = multiset |> Multiset.counts() |> Math.multinomial()
     i = if n < 0, do: total + n, else: n
 
-    if i < 0 or i >= total, do: raise(Enum.OutOfBoundsError, index: n)
+    if i < 0 or i >= total, do: raise(Enum.OutOfBoundsError, message: "index #{n} out of bounds")
 
     {_keys, values} = unrank(multiset, total, i)
     values

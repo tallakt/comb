@@ -186,7 +186,7 @@ defmodule SComb.Combinations do
 
   defp index!(n, count) do
     i = if n < 0, do: count + n, else: n
-    if i < 0 or i >= count, do: raise(Enum.OutOfBoundsError, index: n)
+    if i < 0 or i >= count, do: raise(Enum.OutOfBoundsError, message: "index #{n} out of bounds")
     i
   end
 end
