@@ -44,6 +44,14 @@ defmodule SComb.Naive do
   def nth_combination_with_replacement(enum, k, n),
     do: combinations_with_replacement(enum, k) |> Enum.fetch!(n)
 
+  def count_cartesian_product(enums), do: cartesian_product(enums) |> Enum.count()
+
+  def nth_cartesian_product(enums, n), do: cartesian_product(enums) |> Enum.fetch!(n)
+
+  def count_permuted_combinations(enum, k), do: permuted_combinations(enum, k) |> Enum.count()
+
+  def nth_permuted_combination(enum, k, n), do: permuted_combinations(enum, k) |> Enum.fetch!(n)
+
   def count_combinations(enum, k), do: combinations(enum, k) |> Enum.count()
 
   def count_partitions(enum), do: partitions(enum) |> Enum.count()

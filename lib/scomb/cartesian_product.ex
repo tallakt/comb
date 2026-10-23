@@ -16,6 +16,25 @@ defmodule SComb.CartesianProduct do
     generate(lists, sizes)
   end
 
+  def count(enums), do: enums |> Enum.map(&Enum.count/1) |> Enum.reduce(1, &*/2)
+
+  # The index written with a digit for each list, the last list the least
+  # significant, so each digit is the position in its list
+  def nth(enums, n) do
+    lists = Enum.map(enums, &List.to_tuple(Enum.to_list(&1)))
+    sizes = Enum.map(lists, &tuple_size/1)
+    i = Multiset.index!(n, Enum.reduce(sizes, 1, &*/2))
+
+    {picked, 0} =
+      lists
+      |> Enum.reverse()
+      |> Enum.map_reduce(i, fn list, i ->
+        {elem(list, rem(i, tuple_size(list))), div(i, tuple_size(list))}
+      end)
+
+    Enum.reverse(picked)
+  end
+
   def selections(enum, k), do: product(List.duplicate(Enum.uniq(enum), k))
 
   def count_selections(enum, k), do: length(Enum.uniq(enum)) ** k

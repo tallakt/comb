@@ -12,6 +12,8 @@ defmodule SComb.SequenceTest do
       partitions([1, 2, 3, 4, 1]),
       partitions(1..5),
       combinations_with_replacement(1..4, 3),
+      permuted_combinations([1, 1, 2, 3], 3),
+      cartesian_product([1..3, [:a, :b], 4..5]),
       # Nothing to return, and the one empty result
       combinations(1..3, 5),
       permutations([])
@@ -77,6 +79,21 @@ defmodule SComb.SequenceTest do
 
     assert Enum.at(subsets(1..100), 10 ** 29) == nth_subset(1..100, 10 ** 29)
     assert Enum.at(selections(1..10, 100), 10 ** 99) == nth_selection(1..10, 100, 10 ** 99)
+  end
+
+  test "partitions with repeated elements are indexed without counting again" do
+    list = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8]
+    sequence = partitions(list)
+    assert Enum.count(sequence) == 2_014_321
+
+    # Each lookup would take about half a second if it generated the elements
+    # before it
+    for i <- 1..20 do
+      n = div(2_014_321 * i, 21)
+      assert Enum.at(sequence, n) == nth_partition(list, n)
+    end
+
+    assert Enum.at(sequence, -1) == Enum.map(list, &[&1])
   end
 
   test "inputs too large to index are still streamed" do

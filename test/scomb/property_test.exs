@@ -95,6 +95,29 @@ defmodule SComb.PropertyTest do
       end
     end
 
+    property "permuted_combinations" do
+      check all(list <- lists(5), k <- integer(0..5), max_runs: @few_runs) do
+        expected = Naive.permuted_combinations(list, k)
+        assert count_permuted_combinations(list, k) == length(expected)
+
+        for {element, n} <- Enum.with_index(expected) do
+          assert nth_permuted_combination(list, k, n) == element
+        end
+      end
+    end
+
+    property "cartesian_product" do
+      check all(enums <- list_of(lists(3), max_length: 4), max_runs: @runs) do
+        expected = Naive.cartesian_product(enums)
+        assert Enum.to_list(cartesian_product(enums)) == expected
+        assert count_cartesian_product(enums) == length(expected)
+
+        for {element, n} <- Enum.with_index(expected) do
+          assert nth_cartesian_product(enums, n) == element
+        end
+      end
+    end
+
     property "combinations_with_replacement" do
       check all(list <- lists(5), k <- integer(0..4), max_runs: @runs) do
         expected = Naive.combinations_with_replacement(list, k)

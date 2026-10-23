@@ -7,7 +7,14 @@ defmodule SComb do
              |> Enum.reject(&String.match?(&1, ~r/```|actions\/workflows/))
              |> Enum.join("\n")
 
-  alias SComb.{CartesianProduct, Combinations, Partitions, Permutations, Sequence}
+  alias SComb.{
+    CartesianProduct,
+    Combinations,
+    Partitions,
+    PermutedCombinations,
+    Permutations,
+    Sequence
+  }
 
   # Sequences of inputs up to this many elements, and partitions up to this
   # many, are indexed. See `SComb.Sequence`.
@@ -42,8 +49,49 @@ defmodule SComb do
       [[]]
 
   """
-  @spec cartesian_product([Enum.t()]) :: Enum.t()
-  def cartesian_product(enums) when is_list(enums), do: CartesianProduct.product(enums)
+  @spec cartesian_product([Enum.t()]) :: Sequence.t()
+  def cartesian_product(enums) when is_list(enums) do
+    lists = Enum.map(enums, &Enum.to_list/1)
+
+    Sequence.new(
+      "cartesian_product",
+      CartesianProduct.product(lists),
+      fn -> CartesianProduct.count(lists) end,
+      &CartesianProduct.nth(lists, &1),
+      indexable: length(lists) <= @index_limit
+    )
+  end
+
+  @doc """
+  Returns the number of elements `cartesian_product/1` would have returned.
+
+  ## Examples
+
+      iex> count_cartesian_product([1..2, [:a], 3..5])
+      6
+
+      iex> count_cartesian_product([1..2, []])
+      0
+
+  """
+  @spec count_cartesian_product([Enum.t()]) :: non_neg_integer
+  def count_cartesian_product(enums) when is_list(enums), do: CartesianProduct.count(enums)
+
+  @doc """
+  Returns the nth element that `cartesian_product/1` would have returned. `n` is
+  zero based, and a negative `n` counts from the end.
+
+  Raises `Enum.OutOfBoundsError` if there is no such element.
+
+  ## Examples
+
+      iex> nth_cartesian_product([1..2, [:a], 3..4], 2)
+      [2, :a, 3]
+
+  """
+  @spec nth_cartesian_product([Enum.t()], integer) :: list | no_return
+  def nth_cartesian_product(enums, n) when is_list(enums) and is_integer(n),
+    do: CartesianProduct.nth(enums, n)
 
   @doc """
   Returns any combination of the elements in `enum` with exactly `k` elements,
@@ -189,14 +237,27 @@ defmodule SComb do
 
     if is_nil(min) and is_nil(max) do
       list = Enum.to_list(enum)
+      stream = Partitions.partitions(list)
 
-      Sequence.new(
-        "partitions",
-        Partitions.partitions(list),
-        fn -> Partitions.count(list) end,
-        &Partitions.nth(list, &1),
-        indexable: length(list) <= @partitions_index_limit
-      )
+      # The plan is made once for all the lookups, if it is quick to make
+      if length(list) <= @partitions_index_limit and Partitions.cheap?(list) do
+        plan = Partitions.plan(list)
+
+        Sequence.new(
+          "partitions",
+          stream,
+          fn -> Partitions.plan_count(plan) end,
+          &Partitions.nth_plan(plan, &1)
+        )
+      else
+        Sequence.new(
+          "partitions",
+          stream,
+          fn -> Partitions.count(list) end,
+          &Partitions.nth(list, &1),
+          indexable: false
+        )
+      end
     else
       Partitions.partitions(enum, min || 0, max || :infinity)
     end
@@ -242,9 +303,9 @@ defmodule SComb do
   def nth_partition(enum, n) when is_integer(n), do: Partitions.nth(enum, n)
 
   @doc """
-  Returns a stream of every permutation of every combination of `k` elements
-  of `enum`: all the ways of picking `k` elements in a particular order.
-  Repeated elements are handled sensibly.
+  Returns a lazy `SComb.Sequence` of every permutation of every combination of
+  `k` elements of `enum`: all the ways of picking `k` elements in a particular
+  order. Repeated elements are handled sensibly.
 
   ## Examples
 
@@ -255,9 +316,50 @@ defmodule SComb do
       [[1, 1], [1, 2], [2, 1]]
 
   """
-  @spec permuted_combinations(Enum.t(), non_neg_integer) :: Enum.t()
-  def permuted_combinations(enum, k) when is_integer(k) and k >= 0,
-    do: enum |> combinations(k) |> Stream.flat_map(&permutations/1)
+  @spec permuted_combinations(Enum.t(), non_neg_integer) :: Sequence.t()
+  def permuted_combinations(enum, k) when is_integer(k) and k >= 0 do
+    list = Enum.to_list(enum)
+
+    Sequence.new(
+      "permuted_combinations",
+      PermutedCombinations.permuted_combinations(list, k),
+      fn -> PermutedCombinations.count(list, k) end,
+      &PermutedCombinations.nth(list, k, &1),
+      indexable: length(list) <= @index_limit
+    )
+  end
+
+  @doc """
+  Returns the number of elements `permuted_combinations/2` would have returned.
+
+  ## Examples
+
+      iex> count_permuted_combinations(1..3, 2)
+      6
+
+      iex> count_permuted_combinations([1, 1, 2], 2)
+      3
+
+  """
+  @spec count_permuted_combinations(Enum.t(), non_neg_integer) :: non_neg_integer
+  def count_permuted_combinations(enum, k) when is_integer(k) and k >= 0,
+    do: PermutedCombinations.count(enum, k)
+
+  @doc """
+  Returns the nth element that `permuted_combinations/2` would have returned.
+  `n` is zero based, and a negative `n` counts from the end.
+
+  Raises `Enum.OutOfBoundsError` if there is no such element.
+
+  ## Examples
+
+      iex> nth_permuted_combination(1..3, 2, 3)
+      [3, 1]
+
+  """
+  @spec nth_permuted_combination(Enum.t(), non_neg_integer, integer) :: list | no_return
+  def nth_permuted_combination(enum, k, n) when is_integer(k) and k >= 0 and is_integer(n),
+    do: PermutedCombinations.nth(enum, k, n)
 
   @doc """
   Returns a lazy `SComb.Sequence` containing all permutations of the input `enum`. A

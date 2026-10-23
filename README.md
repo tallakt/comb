@@ -57,6 +57,12 @@ Add `scomb` to the dependencies in your `mix.exs`:
 ```elixir
     iex> permuted_combinations(1..3, 2) |> Enum.to_list
     [[1, 2], [2, 1], [1, 3], [3, 1], [2, 3], [3, 2]]
+
+    iex> count_permuted_combinations(1..3, 2)
+    6
+
+    iex> nth_permuted_combination(1..3, 2, 3)
+    [3, 1]
 ```
 
 ### Combinations
@@ -83,6 +89,12 @@ Add `scomb` to the dependencies in your `mix.exs`:
 
     iex> cartesian_product([1..2, [:a], 3..4]) |> Enum.to_list
     [[1, :a, 3], [1, :a, 4], [2, :a, 3], [2, :a, 4]]
+
+    iex> count_cartesian_product([1..2, [:a], 3..4])
+    4
+
+    iex> nth_cartesian_product([1..2, [:a], 3..4], 2)
+    [2, :a, 3]
 ```
 
 ### Subsets
@@ -153,9 +165,9 @@ Results are generated lazily, so you can take from results too large to hold
 in memory. The `count_*`, `nth_*` and `drop_permutations/2` functions, and
 `permutation_index/1`, compute their result directly, without generating the
 elements before it. The results of `permutations/1`, `combinations/2`,
-`subsets/1`, `selections/2`, `partitions/1` and
-`combinations_with_replacement/2` are `SComb.Sequence` structs that use these
-functions, so the `Enum` functions that look at a position or the size do not
+`subsets/1`, `selections/2`, `partitions/1`, `combinations_with_replacement/2`,
+`permuted_combinations/2` and `cartesian_product/1` are `SComb.Sequence`
+structs that use these functions, so the `Enum` functions that look at a position or the size do not
 generate the elements before it either.
 
 ```elixir

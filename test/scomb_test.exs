@@ -73,6 +73,39 @@ defmodule SCombTest do
       end
     end
 
+    test "permuted_combinations, count and nth" do
+      for input <- inputs(), length(input) <= 5, k <- 0..6 do
+        expected = Naive.permuted_combinations(input, k)
+        assert Enum.to_list(permuted_combinations(input, k)) == expected, inspect({input, k})
+        assert count_permuted_combinations(input, k) == length(expected), inspect({input, k})
+
+        for {permutation, n} <- Enum.with_index(expected) do
+          assert nth_permuted_combination(input, k, n) == permutation, inspect({input, k, n})
+        end
+      end
+    end
+
+    test "cartesian_product, count and nth" do
+      for enums <- [
+            [],
+            [1..3],
+            [1..2, []],
+            [[], []],
+            [1..2, 3..5],
+            [1..2, [:a, :a], 3..5],
+            [[:a], [:b], [:c]],
+            List.duplicate(1..3, 3)
+          ] do
+        expected = Naive.cartesian_product(enums)
+        assert Enum.to_list(cartesian_product(enums)) == expected, inspect(enums)
+        assert count_cartesian_product(enums) == length(expected), inspect(enums)
+
+        for {element, n} <- Enum.with_index(expected) do
+          assert nth_cartesian_product(enums, n) == element, inspect({enums, n})
+        end
+      end
+    end
+
     test "partitions, count and nth" do
       for input <- inputs() do
         expected = Naive.partitions(input)
@@ -162,6 +195,18 @@ defmodule SCombTest do
   end
 
   test "counts and nth work far into huge results of the new functions" do
+    # 100! / 50! arrangements of 50 of 100 elements
+    assert count_permuted_combinations(1..100, 50) ==
+             div(SComb.Math.factorial(100), SComb.Math.factorial(50))
+
+    assert nth_permuted_combination(1..100, 50, 0) == Enum.to_list(1..50)
+
+    assert nth_permuted_combination(1..100, 50, -1) ==
+             Enum.to_list(100..51//-1)
+
+    assert count_cartesian_product(List.duplicate(1..10, 100)) == 10 ** 100
+    assert nth_cartesian_product(List.duplicate(1..10, 100), -1) == List.duplicate(10, 100)
+
     # The Bell number B(30)
     assert count_partitions(1..30) == 846_749_014_511_809_332_450_147
     assert nth_partition(1..30, -1) == Enum.map(1..30, &[&1])
@@ -206,6 +251,10 @@ defmodule SCombTest do
     assert count_partitions([]) == 1
     assert nth_partition([], 0) == []
     assert count_selections([], 2) == 0
+    assert count_permuted_combinations([], 0) == 1
+    assert count_permuted_combinations([], 1) == 0
+    assert count_cartesian_product([]) == 1
+    assert nth_cartesian_product([], 0) == []
     assert count_selections([], 0) == 1
     assert nth_selection([], 0, 0) == []
     assert Enum.to_list(combinations_with_replacement([], 0)) == [[]]
@@ -222,6 +271,8 @@ defmodule SCombTest do
     assert nth_subset(1..3, -1) == [1, 2, 3]
     assert nth_partition(1..3, -1) == [[1], [2], [3]]
     assert nth_selection(1..3, 2, -1) == [3, 3]
+    assert nth_permuted_combination(1..3, 2, -1) == [3, 2]
+    assert nth_cartesian_product([1..2, 3..4], -1) == [2, 4]
     assert nth_combination_with_replacement(1..3, 2, -1) == [3, 3]
     assert Enum.to_list(drop_permutations(1..3, -4)) == [[1, 2, 3], [2, 1, 3]]
   end
@@ -235,6 +286,10 @@ defmodule SCombTest do
     assert_raise Enum.OutOfBoundsError, fn -> nth_partition([1, 1, 2], -5) end
     assert_raise Enum.OutOfBoundsError, fn -> nth_selection(1..3, 2, 9) end
     assert_raise Enum.OutOfBoundsError, fn -> nth_selection([], 2, 0) end
+    assert_raise Enum.OutOfBoundsError, fn -> nth_permuted_combination(1..3, 2, 6) end
+    assert_raise Enum.OutOfBoundsError, fn -> nth_permuted_combination(1..3, 4, 0) end
+    assert_raise Enum.OutOfBoundsError, fn -> nth_cartesian_product([1..2, []], 0) end
+    assert_raise Enum.OutOfBoundsError, fn -> nth_cartesian_product([1..2, 1..2], 4) end
     assert_raise Enum.OutOfBoundsError, fn -> nth_combination_with_replacement(1..3, 2, 6) end
   end
 

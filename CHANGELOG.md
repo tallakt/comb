@@ -12,11 +12,13 @@
   does not go through every partition of 40 elements
 - `count_partitions/1` and `nth_partition/2`
 - `count_selections/2` and `nth_selection/3`
+- `count_permuted_combinations/2` and `nth_permuted_combination/3`
+- `count_cartesian_product/1` and `nth_cartesian_product/2`
 - `combinations_with_replacement/2`, `count_combinations_with_replacement/2` and
   `nth_combination_with_replacement/3`
 - `SComb.Sequence`, the type of what `permutations/1`, `combinations/2`,
-  `subsets/1`, `selections/2`, `partitions/1` and
-  `combinations_with_replacement/2` return. It is an `Enumerable` that knows
+  `subsets/1`, `selections/2`, `partitions/1`, `combinations_with_replacement/2`,
+  `permuted_combinations/2` and `cartesian_product/1` return. It is an `Enumerable` that knows
   its size and finds an element by index, so `Enum.count/1`, `Enum.at/2`,
   `Enum.slice/2`, `Enum.random/1` and similar do not generate the elements
   before it. Inputs of more than 2000 elements, or 200 for partitions, are

@@ -17,6 +17,10 @@ defmodule SComb.Partitions do
   # cost more per element
   @eager_size 8
 
+  # The most combinations of the counts of repeated elements for which a plan
+  # is made when a sequence is created
+  @cheap_plan 3000
+
   # The number of blocks may be limited to min..max. The limits are held as
   # `{used, min, max}`, where used is the number of blocks already placed.
   # The max may be :infinity, as every number is smaller than an atom.
@@ -88,53 +92,83 @@ defmodule SComb.Partitions do
   # partitions after a first block depends only on what is left and the block,
   # so it is looked up in a memo when seen before.
 
-  def count(enum) do
+  # The numbers needed to count and rank the partitions of an input. Finding
+  # them takes the time of a count, so a sequence keeps the plan to count and
+  # find any number of partitions. With distinct elements it holds the Bell
+  # numbers, otherwise the entries and the memo of the counts.
+  def plan(enum) do
     multiset = Multiset.from_enum(enum)
 
     if Multiset.distinct?(multiset) do
-      multiset |> length() |> bells() |> last()
-    else
-      {count, _memo} = multiset |> entries() |> count_blocks(:free, %{})
-      count
-    end
-  end
-
-  def nth(enum, n) do
-    multiset = Multiset.from_enum(enum)
-
-    if Multiset.distinct?(multiset) do
-      bells = multiset |> length() |> bells()
-      n = Multiset.index!(n, last(bells))
-      nth_distinct(Enum.map(multiset, &elem(&1, 0)), n, bells)
+      {:distinct, Enum.map(multiset, &elem(&1, 0)), multiset |> length() |> bells()}
     else
       entries = entries(multiset)
       {count, memo} = count_blocks(entries, :free, %{})
-      {partition, _memo} = unrank(entries, :free, Multiset.index!(n, count), memo)
-      partition
+      {:memo, entries, count, memo}
     end
+  end
+
+  # Whether the plan for the input is quick to find: it has no more than a
+  # few distinct combinations of repeated elements to count
+  def cheap?(enum) do
+    multiset = Multiset.from_enum(enum)
+
+    Multiset.distinct?(multiset) or
+      multiset |> Multiset.counts() |> Enum.reduce(1, &(&2 * (&1 + 1))) <= @cheap_plan
+  end
+
+  def count(enum), do: enum |> plan() |> plan_count()
+
+  def plan_count({:distinct, _values, bells}), do: last(bells)
+  def plan_count({:memo, _entries, count, _memo}), do: count
+
+  def nth(enum, n), do: enum |> plan() |> nth_plan(n)
+
+  def nth_plan({:distinct, values, bells}, n),
+    do: nth_distinct(values, Multiset.index!(n, last(bells)), bells)
+
+  def nth_plan({:memo, entries, count, memo}, n) do
+    unrank(entries, :free, Multiset.index!(n, count), memo)
   end
 
   defp entries(multiset), do: Enum.with_index(multiset, fn {v, c}, rank -> {rank, v, c} end)
 
+  # The memo holds for each state the number of partitions, and the number
+  # after each of its first blocks. The states are found by their shape, so
+  # the blocks themselves are not kept: other values may have the same shape.
   defp count_blocks([], _bound, memo), do: {1, memo}
 
   defp count_blocks(entries, bound, memo) do
     key = memo_key(entries, bound)
 
     case memo do
-      %{^key => count} ->
+      %{^key => {count, _counts}} ->
         {count, memo}
 
       %{} ->
-        {count, memo} =
-          Enum.reduce(first_blocks(entries, bound), {0, memo}, fn {_block, left, bound},
-                                                                  {sum, memo} ->
-            {count, memo} = count_blocks(left, bound, memo)
-            {sum + count, memo}
+        {counts, memo} =
+          entries
+          |> first_blocks(bound)
+          |> Enum.map_reduce(memo, fn {_block, left, bound}, memo ->
+            count_blocks(left, bound, memo)
           end)
 
-        {count, Map.put(memo, key, count)}
+        count = Enum.sum(counts)
+        {count, Map.put(memo, key, {count, counts})}
     end
+  end
+
+  defp unrank([], _bound, _n, _memo), do: []
+
+  defp unrank(entries, bound, n, memo) do
+    key = memo_key(entries, bound)
+    %{^key => {_count, counts}} = memo
+    {block, left, bound, n} = find_block(first_blocks(entries, bound), counts, n)
+    [block | unrank(left, bound, n, memo)]
+  end
+
+  defp find_block([{block, left, bound} | blocks], [count | counts], n) do
+    if n < count, do: {block, left, bound, n}, else: find_block(blocks, counts, n - count)
   end
 
   # What is left and the bound decide how many partitions there are, whatever
@@ -142,44 +176,18 @@ defmodule SComb.Partitions do
   # counts have the same key. The bound is :free if it starts at a rank before
   # the first entry, as a block starting there is smaller.
   defp memo_key([{first, _value, _count} | _] = entries, bound) do
-    bound = if match?([{rank, _} | _] when rank < first, bound), do: :free, else: bound
+    if bound == :free or match?([{rank, _} | _] when rank < first, bound) do
+      # Only the counts decide, as the order of the ranks is that of the entries
+      {Enum.map(entries, &elem(&1, 2)), :free}
+    else
+      ranks = Enum.map(entries, &elem(&1, 0)) ++ Enum.map(bound, &elem(&1, 0))
+      index = ranks |> Enum.sort() |> Enum.uniq() |> Enum.with_index() |> Map.new()
 
-    ranks =
-      case bound do
-        :free -> Enum.map(entries, &elem(&1, 0))
-        bound -> Enum.sort(Enum.map(entries, &elem(&1, 0)) ++ Enum.map(bound, &elem(&1, 0)))
-      end
+      entries =
+        Enum.map(entries, fn {rank, _value, count} -> {Map.fetch!(index, rank), count} end)
 
-    index = ranks |> Enum.uniq() |> Enum.with_index() |> Map.new()
-    entries = Enum.map(entries, fn {rank, _value, count} -> {Map.fetch!(index, rank), count} end)
-
-    case bound do
-      :free ->
-        {entries, :free}
-
-      bound ->
-        {entries, Enum.map(bound, fn {rank, count} -> {Map.fetch!(index, rank), count} end)}
+      {entries, Enum.map(bound, fn {rank, count} -> {Map.fetch!(index, rank), count} end)}
     end
-  end
-
-  defp unrank([], _bound, _n, memo), do: {[], memo}
-
-  defp unrank(entries, bound, n, memo) do
-    result =
-      Enum.reduce_while(first_blocks(entries, bound), {n, memo}, fn {block, left, bound},
-                                                                    {n, memo} ->
-        {count, memo} = count_blocks(left, bound, memo)
-
-        if n < count do
-          {rest, memo} = unrank(left, bound, n, memo)
-          {:halt, {:found, [block | rest], memo}}
-        else
-          {:cont, {n - count, memo}}
-        end
-      end)
-
-    {:found, partition, memo} = result
-    {partition, memo}
   end
 
   # The first block of a partition of the entries, with what is left and the

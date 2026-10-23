@@ -2,7 +2,8 @@ defmodule SComb.Sequence do
   @moduledoc """
   The lazy sequence of results returned by `SComb.permutations/1`,
   `SComb.combinations/2`, `SComb.subsets/1`, `SComb.selections/2`,
-  `SComb.partitions/1` and `SComb.combinations_with_replacement/2`.
+  `SComb.partitions/1`, `SComb.combinations_with_replacement/2`,
+  `SComb.permuted_combinations/2` and `SComb.cartesian_product/1`.
 
   A sequence is an `Enumerable` that generates its elements one at a time, like
   a `Stream`. In addition it knows its size and how to find an element by its
